@@ -117,7 +117,7 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 8,
       ),
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: surfaceColor,
         elevation: 2,
         shape: BeveledRectangleBorder(
@@ -144,7 +144,7 @@ class AppTheme {
         hintStyle: const TextStyle(color: Color(0xFF475569)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-      dialogTheme: const DialogTheme(
+      dialogTheme: const DialogThemeData(
         backgroundColor: surfaceColor,
         shape: BeveledRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(10)),
