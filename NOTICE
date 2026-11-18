@@ -1,0 +1,8 @@
+DVTBot AI Assistant (Android)
+Copyright 2024-2026 DVTBot Contributors
+
+This product includes software developed as part of:
+- xiaozhi-android-client by TOM88812 (https://github.com/TOM88812/xiaozhi-android-client), licensed under the Apache License, Version 2.0.
+- Flutter SDK and Flutter plugins by The Flutter Authors, licensed under BSD-style licenses.
+- Android Open Source Project, licensed under the Apache License, Version 2.0.
+- Opus audio codec libraries (Xiph.Org Foundation, Skype Limited), licensed under BSD-style licenses.

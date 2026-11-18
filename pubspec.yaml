@@ -1,5 +1,5 @@
 name: ai_assistant
-description: "A new Flutter project."
+description: "DVTBot AI Assistant Android application."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -74,29 +74,19 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
+dependency_overrides:
+  record_platform_interface: 1.2.0
+
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # 配置应用图标
 flutter_launcher_icons:
   android: true
-  ios: true
   image_path: "robot_3.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "robot_3.png"
-  remove_alpha_ios: true
-  web:
-    generate: true
-    image_path: "robot_3.png"
-    background_color: "#FFFFFF"
-    theme_color: "#FFFFFF"
-  windows:
-    generate: true
-    image_path: "robot_3.png"
-    icon_size: 48
-  macos:
-    generate: true
-    image_path: "robot_3.png"
 
 # The following section is specific to Flutter packages.
 flutter:

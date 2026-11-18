@@ -2,6 +2,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://storage.flutter-io.cn/download.flutter.io") }
     }
 }
 
@@ -12,12 +13,9 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-subprojects {
-    project.evaluationDependsOn(":app")
-}
 
 subprojects {
-    fun setNamespaceIfMissing() {
+    fun fixSubproject() {
         val android = project.extensions.findByName("android")
         if (android != null) {
             try {
@@ -29,14 +27,31 @@ subprojects {
                 }
             } catch (e: Exception) {
             }
+
+            try {
+                val setCompileSdk = android.javaClass.methods.firstOrNull { 
+                    it.name == "setCompileSdk" && it.parameterCount == 1 
+                }
+                setCompileSdk?.invoke(android, 36)
+            } catch (e: Exception) {
+            }
+            try {
+                val setCompileSdkVersion = android.javaClass.methods.firstOrNull { 
+                    it.name == "setCompileSdkVersion" && it.parameterCount == 1 
+                }
+                setCompileSdkVersion?.invoke(android, 36)
+            } catch (e: Exception) {
+            }
         }
+
+
     }
 
     if (project.state.executed) {
-        setNamespaceIfMissing()
+        fixSubproject()
     } else {
         afterEvaluate {
-            setNamespaceIfMissing()
+            fixSubproject()
         }
     }
 }

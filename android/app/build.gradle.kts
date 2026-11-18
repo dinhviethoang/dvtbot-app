@@ -1,3 +1,7 @@
+import java.util.Properties
+import java.io.FileInputStream
+import java.io.File
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -5,21 +9,29 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = listOf(
+    rootProject.file("key.properties"),
+    file("key.properties"),
+    file("../key.properties")
+).firstOrNull { it.exists() }
+
+if (keystorePropertiesFile != null) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.lhht.ai_assistant"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.king.hdvbot"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -27,22 +39,44 @@ android {
     }
 
     signingConfigs {
-        create("hdvbot") {
-            // Khoa ky co dinh de cac ban build sau cai de len ban cu duoc (repo rieng tu)
-            storeFile = file("hdvbot-release.p12")
-            storeType = "pkcs12"
-            storePassword = "46a1905cec90c7242ea68634"
-            keyAlias = "hdvbot"
-            keyPassword = "46a1905cec90c7242ea68634"
+        create("release") {
+            val keyAliasVal = keystoreProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS")
+            val keyPasswordVal = keystoreProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD")
+            val storeFileVal = keystoreProperties.getProperty("storeFile") ?: System.getenv("STORE_FILE")
+            val storePasswordVal = keystoreProperties.getProperty("storePassword") ?: System.getenv("STORE_PASSWORD")
+            val storeTypeVal = keystoreProperties.getProperty("storeType") ?: System.getenv("STORE_TYPE")
+
+            val resolvedStoreFile = if (!storeFileVal.isNullOrEmpty()) {
+                val candidates = listOf(
+                    file(storeFileVal),
+                    File(keystorePropertiesFile?.parentFile ?: project.projectDir, storeFileVal),
+                    File(project.projectDir, storeFileVal),
+                    rootProject.file(storeFileVal)
+                )
+                candidates.firstOrNull { it.exists() }
+            } else null
+
+            if (resolvedStoreFile != null && resolvedStoreFile.exists()) {
+                storeFile = resolvedStoreFile
+                storePassword = storePasswordVal
+                keyAlias = keyAliasVal
+                keyPassword = keyPasswordVal
+                if (!storeTypeVal.isNullOrEmpty()) {
+                    storeType = storeTypeVal
+                }
+            }
         }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("hdvbot")
-            // 启用R8优化
+            val releaseSigning = signingConfigs.getByName("release")
+            signingConfig = if (releaseSigning.storeFile != null) {
+                releaseSigning
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            // Enable R8 optimization
             isMinifyEnabled = true
             isDebuggable = false
             isShrinkResources = true
@@ -50,7 +84,6 @@ android {
         }
         
         debug {
-            // 启用更好的调试性能
             isMinifyEnabled = false
             isShrinkResources = false
             isDebuggable = true
@@ -60,4 +93,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
