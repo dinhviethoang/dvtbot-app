@@ -3,6 +3,41 @@ import 'package:flutter/services.dart';
 import '../assistant_v2/assistant_v2_bridge.dart';
 import '../utils/app_log.dart';
 
+/// Các loại hành động hệ thống được hỗ trợ (P0.2)
+enum AssistantActionType {
+  openMaps,
+  openYoutube,
+  openApp,
+  back,
+  home,
+  recents,
+  scroll,
+  clickText,
+  setVolume,
+  adjustVolume,
+  toggleFlashlight,
+  openSettings,
+}
+
+/// Kết quả thực thi hành động bất đồng bộ có cấu trúc (P0.2)
+class AssistantActionResult {
+  final bool success;
+  final AssistantActionType action;
+  final String message;
+  final Map<String, Object?> data;
+
+  const AssistantActionResult({
+    required this.success,
+    required this.action,
+    required this.message,
+    this.data = const {},
+  });
+
+  @override
+  String toString() =>
+      'AssistantActionResult(success: $success, action: ${action.name}, message: "$message")';
+}
+
 /// Bộ thực thi lệnh hệ thống (System Assistant Action Engine)
 /// Điều khiển điện thoại Android như Google Assistant thông qua Intent & MethodChannel
 class AssistantActionExecutor {
@@ -514,236 +549,500 @@ class AssistantActionExecutor {
     }
   }
 
-  /// Lớp 2: Phân tích ngữ nghĩa kép (Tag Parser & Vietnamese Natural Language Trigger)
-  /// Trả về chuỗi văn bản đã loại bỏ thẻ tag (để hiển thị lên UI)
-  static String interceptAndExecute(String rawText) {
+  /// Loại bỏ các thẻ lệnh XML (`<MAP:...>`, `<BACK>`, v.v.) khỏi văn bản hiển thị giao diện
+  static String stripTags(String rawText) {
     if (rawText.isEmpty) return rawText;
-    String cleanText = rawText;
-
-    // --- RULE A: Tag Parser (<MAP:...>, <YOUTUBE:...>, <APP:...>, <CALL:...>) ---
-    final mapRegex = RegExp(r'<MAP:\s*(.+?)>', caseSensitive: false);
-    for (final match in mapRegex.allMatches(rawText)) {
-      final dest = match.group(1)?.trim();
-      if (dest != null && dest.isNotEmpty) {
-        openGoogleMaps(dest);
-      }
-    }
-    cleanText = cleanText.replaceAll(mapRegex, '');
-
-    final ytRegex = RegExp(r'<YOUTUBE:\s*(.+?)>', caseSensitive: false);
-    for (final match in ytRegex.allMatches(rawText)) {
-      final query = match.group(1)?.trim();
-      if (query != null && query.isNotEmpty) {
-        openYouTube(query);
-      }
-    }
-    cleanText = cleanText.replaceAll(ytRegex, '');
-
-    final appRegex = RegExp(r'<APP:\s*(.+?)>', caseSensitive: false);
-    for (final match in appRegex.allMatches(rawText)) {
-      final appName = match.group(1)?.trim();
-      if (appName != null && appName.isNotEmpty) {
-        openApp(appName);
-      }
-    }
-    cleanText = cleanText.replaceAll(appRegex, '');
-
-    final callRegex = RegExp(r'<CALL:\s*(.+?)>', caseSensitive: false);
-    for (final match in callRegex.allMatches(rawText)) {
-      final number = match.group(1)?.trim();
-      if (number != null && number.isNotEmpty) {
-        makePhoneCall(number);
-      }
-    }
-    cleanText = cleanText.replaceAll(callRegex, '');
-
-    // Tags cho điều hướng trợ năng
-    if (RegExp(r'<BACK>', caseSensitive: false).hasMatch(rawText)) {
-      performBack();
-    }
-    if (RegExp(r'<HOME>', caseSensitive: false).hasMatch(rawText)) {
-      performHome();
-    }
-    if (RegExp(r'<RECENTS>', caseSensitive: false).hasMatch(rawText)) {
-      openRecents();
-    }
-    if (RegExp(r'<SCROLL>', caseSensitive: false).hasMatch(rawText)) {
-      scrollForward();
-    }
-    final clickRegex = RegExp(r'<CLICK:\s*(.+?)>', caseSensitive: false);
-    for (final match in clickRegex.allMatches(rawText)) {
-      final label = match.group(1)?.trim();
-      if (label != null && label.isNotEmpty) {
-        clickVisibleText(label);
-      }
-    }
-    cleanText = cleanText
+    return rawText
+        .replaceAll(
+          RegExp(
+            r'<(?:MAP|YOUTUBE|APP|CALL|CLICK):\s*[^>]+>',
+            caseSensitive: false,
+          ),
+          '',
+        )
         .replaceAll(
           RegExp(r'<(?:BACK|HOME|RECENTS|SCROLL)>', caseSensitive: false),
           '',
         )
-        .replaceAll(clickRegex, '');
+        .trim();
+  }
 
-    // --- RULE B: Vietnamese Natural Language Trigger ---
-    final textForMatching = rawText.trim();
+  /// P0.2 - Bộ điều phối hành động bất đồng bộ có cấu trúc (Typed Async Action Dispatcher)
+  /// Trả về kết quả thực thi [AssistantActionResult] nếu câu lệnh khớp một hành động,
+  /// hoặc null nếu không phải lệnh điều khiển hệ thống/ứng dụng.
+  static Future<AssistantActionResult?> dispatchCommand(String rawText) async {
+    final text = rawText.trim();
+    if (text.isEmpty) return null;
 
-    // 1. Google Maps: "chỉ đường đến...", "tìm đường đi..."
+    // 1. Phân tích các thẻ nhúng hệ thống (<MAP:...>, <YOUTUBE:...>, <APP:...>, <BACK>, <HOME>, v.v.)
+    final mapTag = RegExp(
+      r'<MAP:\s*(.+?)>',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (mapTag != null) {
+      final dest = mapTag.group(1)?.trim() ?? '';
+      AppLog.add('[INTENT] open_maps destination="$dest"');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await openGoogleMaps(dest.isNotEmpty ? dest : 'Google Maps');
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.openMaps,
+        message:
+            success
+                ? (dest.isNotEmpty
+                    ? 'Đã mở Google Maps tìm $dest'
+                    : 'Đã mở Google Maps')
+                : 'Không thể mở Google Maps',
+        data: Map<String, Object?>.from(res),
+      );
+    }
+
+    final ytTag = RegExp(
+      r'<YOUTUBE:\s*(.+?)>',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (ytTag != null) {
+      final query = ytTag.group(1)?.trim() ?? '';
+      AppLog.add('[INTENT] open_youtube query="$query"');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await openYouTube(query.isNotEmpty ? query : 'YouTube');
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.openYoutube,
+        message:
+            success
+                ? (query.isNotEmpty
+                    ? 'Đã mở YouTube tìm $query'
+                    : 'Đã mở YouTube')
+                : 'Không thể mở YouTube',
+        data: Map<String, Object?>.from(res),
+      );
+    }
+
+    final appTag = RegExp(
+      r'<APP:\s*(.+?)>',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (appTag != null) {
+      final appName = appTag.group(1)?.trim() ?? '';
+      AppLog.add('[INTENT] open_app app_name="$appName"');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await openApp(appName);
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.openApp,
+        message:
+            success
+                ? 'Đã mở ứng dụng $appName'
+                : 'Không tìm thấy ứng dụng $appName trên thiết bị',
+        data: Map<String, Object?>.from(res),
+      );
+    }
+
+    if (RegExp(r'<BACK>', caseSensitive: false).hasMatch(text)) {
+      AppLog.add('[INTENT] back');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await performBack();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.back,
+        message:
+            success ? 'Đã thực hiện thao tác quay lại' : 'Không thể quay lại',
+      );
+    }
+
+    if (RegExp(r'<HOME>', caseSensitive: false).hasMatch(text)) {
+      AppLog.add('[INTENT] home');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await performHome();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.home,
+        message:
+            success ? 'Đã về màn hình chính' : 'Không thể về màn hình chính',
+      );
+    }
+
+    if (RegExp(r'<RECENTS>', caseSensitive: false).hasMatch(text)) {
+      AppLog.add('[INTENT] recents');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await openRecents();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.recents,
+        message: success ? 'Đã mở màn hình đa nhiệm' : 'Không thể mở đa nhiệm',
+      );
+    }
+
+    if (RegExp(r'<SCROLL>', caseSensitive: false).hasMatch(text)) {
+      AppLog.add('[INTENT] scroll');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await scrollForward();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.scroll,
+        message: success ? 'Đã cuộn màn hình' : 'Không thể cuộn màn hình',
+      );
+    }
+
+    final clickTag = RegExp(
+      r'<CLICK:\s*(.+?)>',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (clickTag != null) {
+      final label = clickTag.group(1)?.trim() ?? '';
+      AppLog.add('[INTENT] click_text label="$label"');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await clickVisibleText(label);
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.clickText,
+        message:
+            success
+                ? 'Đã nhấn vào $label'
+                : 'Không tìm thấy $label trên màn hình',
+      );
+    }
+
+    // 2. Nhận diện ngôn ngữ tự nhiên tiếng Việt (Vietnamese Natural Language Intent)
+    final textForMatching = text.toLowerCase();
+
+    // 2.1 Google Maps
     final mapsNlp = RegExp(
-      r'(?:chỉ đường|tìm đường|đường đi|dẫn đường|mở bản đồ|mở google map|mở gg map)\s+(?:đến|tới|đi|tại)?\s*(.+)',
+      r'^(?:chỉ đường|tìm đường|đường đi|dẫn đường|mở bản đồ|mở google maps?|mở gg maps?)\s*(?:đến|tới|đi|tại)?\s*(.*)$',
       caseSensitive: false,
     );
-    final mapMatch = mapsNlp.firstMatch(textForMatching);
+    final mapMatch = mapsNlp.firstMatch(text);
     if (mapMatch != null) {
-      final dest = mapMatch.group(1)?.trim();
-      if (dest != null && dest.isNotEmpty && !dest.startsWith('<')) {
-        openGoogleMaps(dest);
-        return cleanText.trim();
-      }
+      String dest = mapMatch.group(1)?.trim() ?? '';
+      AppLog.add('[INTENT] open_maps destination="$dest"');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await openGoogleMaps(dest.isNotEmpty ? dest : 'Google Maps');
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.openMaps,
+        message:
+            success
+                ? (dest.isNotEmpty
+                    ? 'Đã mở Google Maps tìm $dest'
+                    : 'Đã mở Google Maps')
+                : 'Không thể mở Google Maps',
+        data: Map<String, Object?>.from(res),
+      );
     }
 
-    // 2. YouTube: "mở youtube...", "bật nhạc..."
+    final nearbyMapsNlp = RegExp(
+      r'^(?:tìm|kiếm)\s+(?:quán|cây xăng|tiệm|chỗ)?\s*(cà phê|cafe|cây xăng|quán ăn|nhà hàng|atm|bệnh viện|nhà thuốc)\s+(?:gần đây|gần đó|gần nhất)$',
+      caseSensitive: false,
+    );
+    if (nearbyMapsNlp.hasMatch(text)) {
+      AppLog.add('[INTENT] open_maps destination="$text"');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await openGoogleMaps(text);
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.openMaps,
+        message:
+            success
+                ? 'Đã mở Google Maps tìm $text'
+                : 'Không thể mở Google Maps',
+        data: Map<String, Object?>.from(res),
+      );
+    }
+
+    // 2.2 YouTube
     final ytNlp = RegExp(
-      r'(?:mở youtube|bật nhạc|nghe bài|tìm trên youtube)\s+(.+)',
+      r'^(?:mở youtube|bật nhạc|nghe bài|tìm trên youtube)\s*(.*)$',
       caseSensitive: false,
     );
-    final ytMatch = ytNlp.firstMatch(textForMatching);
+    final ytMatch = ytNlp.firstMatch(text);
     if (ytMatch != null) {
-      final query = ytMatch.group(1)?.trim();
-      if (query != null && query.isNotEmpty && !query.startsWith('<')) {
-        openYouTube(query);
-        return cleanText.trim();
+      String query = ytMatch.group(1)?.trim() ?? '';
+      if (query.toLowerCase().startsWith('tìm ')) {
+        query = query.substring(4).trim();
       }
+      AppLog.add('[INTENT] open_youtube query="$query"');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await openYouTube(query.isNotEmpty ? query : 'YouTube');
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.openYoutube,
+        message:
+            success
+                ? (query.isNotEmpty
+                    ? 'Đã mở YouTube tìm $query'
+                    : 'Đã mở YouTube')
+                : 'Không thể mở YouTube',
+        data: Map<String, Object?>.from(res),
+      );
     }
 
-    // 3. Đèn pin: "bật đèn pin", "tắt đèn pin"
-    final flashNlp = RegExp(r'(bật|tắt)\s+đèn pin', caseSensitive: false);
-    final flashMatch = flashNlp.firstMatch(textForMatching);
+    // 2.3 Đèn pin
+    final flashNlp = RegExp(r'^(bật|tắt)\s+đèn pin$', caseSensitive: false);
+    final flashMatch = flashNlp.firstMatch(text);
     if (flashMatch != null) {
-      final action = flashMatch.group(1)?.toLowerCase();
-      toggleFlashlight(state: action == 'bật');
-      return cleanText.trim();
+      final state = flashMatch.group(1)?.toLowerCase() == 'bật';
+      AppLog.add('[INTENT] toggle_flashlight state=$state');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await toggleFlashlight(state: state);
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.toggleFlashlight,
+        message:
+            success
+                ? (state ? 'Đã bật đèn pin' : 'Đã tắt đèn pin')
+                : 'Không thể điều khiển đèn pin',
+        data: Map<String, Object?>.from(res),
+      );
     }
 
-    // 4. Âm lượng: "tăng âm lượng", "giảm âm lượng", "chỉnh âm lượng 80"
-    final volUpNlp = RegExp(
-      r'(?:tăng|vặn to)\s+âm lượng',
+    // 2.4 Âm lượng
+    if (RegExp(
+      r'^(?:tăng|vặn to)\s+âm lượng$',
       caseSensitive: false,
-    );
-    if (volUpNlp.hasMatch(textForMatching)) {
-      adjustVolume(true);
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] adjust_volume up=true');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await adjustVolume(true);
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.adjustVolume,
+        message: success ? 'Đã tăng âm lượng' : 'Không thể tăng âm lượng',
+        data: Map<String, Object?>.from(res),
+      );
     }
 
-    final volDownNlp = RegExp(
-      r'(?:giảm|vặn nhỏ)\s+âm lượng',
+    if (RegExp(
+      r'^(?:giảm|vặn nhỏ)\s+âm lượng$',
       caseSensitive: false,
-    );
-    if (volDownNlp.hasMatch(textForMatching)) {
-      adjustVolume(false);
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] adjust_volume up=false');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await adjustVolume(false);
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.adjustVolume,
+        message: success ? 'Đã giảm âm lượng' : 'Không thể giảm âm lượng',
+        data: Map<String, Object?>.from(res),
+      );
     }
 
     final volSetNlp = RegExp(
-      r'(?:chỉnh|đặt|cài)\s+âm lượng\s+(\d+)',
+      r'^(?:chỉnh|đặt|cài)\s+âm lượng\s+(\d+)$',
       caseSensitive: false,
     );
-    final volSetMatch = volSetNlp.firstMatch(textForMatching);
+    final volSetMatch = volSetNlp.firstMatch(text);
     if (volSetMatch != null) {
-      final level = int.tryParse(volSetMatch.group(1) ?? '');
-      if (level != null) {
-        setVolume(level);
-        return cleanText.trim();
-      }
+      final level = int.tryParse(volSetMatch.group(1) ?? '') ?? 50;
+      AppLog.add('[INTENT] set_volume level=$level');
+      AppLog.add('[ACTION] method_channel_call');
+      final res = await setVolume(level);
+      final bool success = res['success'] == true;
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.setVolume,
+        message:
+            success ? 'Đã cài âm lượng về $level%' : 'Không thể cài âm lượng',
+        data: Map<String, Object?>.from(res),
+      );
     }
 
-    // 5. Mở ứng dụng: "mở zalo", "mở camera", v.v.
-    final openAppNlp = RegExp(
-      r'(?:mở|chạy|bật)\s+(?:ứng dụng|app)?\s*(zalo|chrome|cài đặt|camera|facebook|fb|messenger|tiktok|tin nhắn|danh bạ|youtube|bản đồ)',
-      caseSensitive: false,
-    );
-    final openAppMatch = openAppNlp.firstMatch(textForMatching);
-    if (openAppMatch != null) {
-      final app = openAppMatch.group(1)?.trim();
-      if (app != null && app.isNotEmpty) {
-        openApp(app);
-        return cleanText.trim();
-      }
-    }
-
-    // 6. Quay lại (BACK)
-    final backNlp = RegExp(
+    // 2.5 Quay lại (BACK)
+    if (RegExp(
       r'^(?:quay lại|trở lại|trở về|lùi lại|bấm back|ấn back)$',
       caseSensitive: false,
-    );
-    if (backNlp.hasMatch(textForMatching)) {
-      performBack();
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] back');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await performBack();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.back,
+        message:
+            success ? 'Đã thực hiện thao tác quay lại' : 'Không thể quay lại',
+      );
     }
 
-    // 7. Về màn hình chính (HOME)
-    final homeNlp = RegExp(
+    // 2.6 Về màn hình chính (HOME) & Đóng ứng dụng (minh bạch giải thích)
+    if (RegExp(
       r'^(?:về màn hình chính|về trang chủ|về home|màn hình chính|ra màn hình chính)$',
       caseSensitive: false,
-    );
-    if (homeNlp.hasMatch(textForMatching)) {
-      performHome();
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] home');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await performHome();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.home,
+        message:
+            success ? 'Đã về màn hình chính' : 'Không thể về màn hình chính',
+      );
     }
 
-    // 8. Đa nhiệm (RECENTS)
-    final recentsNlp = RegExp(
-      r'(?:mở|xem)?\s*(?:đa nhiệm|ứng dụng gần đây|các app gần đây)',
+    if (RegExp(
+      r'^(?:đóng|thoát)\s+(?:ứng dụng|app)?\s*(?:này|hiện tại)?$',
       caseSensitive: false,
-    );
-    if (recentsNlp.hasMatch(textForMatching)) {
-      openRecents();
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] close_app -> home');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await performHome();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.home,
+        message:
+            success
+                ? 'Đã thoát về màn hình chính (Android không cho phép đóng ứng dụng nền khác trực tiếp)'
+                : 'Không thể thoát về màn hình chính',
+      );
     }
 
-    // 9. Cuộn trang (SCROLL)
-    final scrollNlp = RegExp(
-      r'(?:cuộn|lướt|trượt)\s+(?:xuống|trang|tiếp)',
+    // 2.7 Mở đa nhiệm (RECENTS)
+    if (RegExp(
+      r'^(?:mở|xem)?\s*(?:đa nhiệm|ứng dụng gần đây|các app gần đây)$',
       caseSensitive: false,
-    );
-    if (scrollNlp.hasMatch(textForMatching)) {
-      scrollForward();
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] recents');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await openRecents();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.recents,
+        message: success ? 'Đã mở màn hình đa nhiệm' : 'Không thể mở đa nhiệm',
+      );
     }
 
-    // 10. Nhấn chữ hoặc nút (CLICK_TEXT)
+    // 2.8 Cuộn trang (SCROLL)
+    if (RegExp(
+      r'^(?:cuộn|lướt|trượt)\s+(?:xuống|trang|tiếp)$',
+      caseSensitive: false,
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] scroll');
+      AppLog.add('[ACTION] method_channel_call');
+      final success = await scrollForward();
+      AppLog.add('[ACTION] result success=$success');
+      return AssistantActionResult(
+        success: success,
+        action: AssistantActionType.scroll,
+        message: success ? 'Đã cuộn màn hình' : 'Không thể cuộn màn hình',
+      );
+    }
+
+    // 2.9 Nhấn văn bản trên màn hình (CLICK_TEXT)
     final clickNlp = RegExp(
-      r'(?:bấm|nhấn|chọn)\s+(?:vào|nút|chữ|mục)?\s*([a-zA-Z0-9\sÀ-ỹ]+)$',
+      r'^(?:bấm|nhấn|chọn)\s+(?:vào|nút|chữ|mục)?\s*([a-zA-Z0-9\sÀ-ỹ]+)$',
       caseSensitive: false,
     );
-    final clickMatch = clickNlp.firstMatch(textForMatching);
+    final clickMatch = clickNlp.firstMatch(text);
     if (clickMatch != null) {
-      final label = clickMatch.group(1)?.trim();
-      if (label != null && label.isNotEmpty && label.length <= 40) {
-        clickVisibleText(label);
-        return cleanText.trim();
+      final label = clickMatch.group(1)?.trim() ?? '';
+      if (label.isNotEmpty && label.length <= 40) {
+        AppLog.add('[INTENT] click_text label="$label"');
+        AppLog.add('[ACTION] method_channel_call');
+        final success = await clickVisibleText(label);
+        AppLog.add('[ACTION] result success=$success');
+        return AssistantActionResult(
+          success: success,
+          action: AssistantActionType.clickText,
+          message:
+              success
+                  ? 'Đã nhấn vào $label'
+                  : 'Không tìm thấy $label trên màn hình',
+        );
       }
     }
 
-    // 11. Mở Cài đặt Trợ năng Android
+    // 2.10 Mở Cài đặt Trợ năng
     if (RegExp(
-      r'(?:mở|cài đặt)\s+trợ năng',
+      r'^(?:mở|cài đặt)\s+trợ năng$',
       caseSensitive: false,
-    ).hasMatch(textForMatching)) {
-      openAccessibilitySettings();
-      return cleanText.trim();
+    ).hasMatch(text)) {
+      AppLog.add('[INTENT] open_settings accessibility');
+      AppLog.add('[ACTION] method_channel_call');
+      await openAccessibilitySettings();
+      AppLog.add('[ACTION] result success=true');
+      return const AssistantActionResult(
+        success: true,
+        action: AssistantActionType.openSettings,
+        message: 'Đã mở Cài đặt Trợ năng Android',
+      );
     }
 
-    // 12. Tìm kiếm địa điểm lân cận trên bản đồ (VD: "tìm quán cà phê gần đó", "cây xăng gần nhất")
-    final nearbyMapsNlp = RegExp(
-      r'(?:tìm|kiếm)\s+(?:quán|cây xăng|tiệm|chỗ)?\s*(cà phê|cafe|cây xăng|quán ăn|nhà hàng|atm|bệnh viện|nhà thuốc)\s+(?:gần đây|gần đó|gần nhất)',
+    // 2.11 Mở ứng dụng (OPEN_APP)
+    final openAppNlp = RegExp(
+      r'^(?:mở|chạy|bật)\s+(?:ứng dụng|app)?\s*([a-zA-Z0-9\sÀ-ỹ]+)$',
       caseSensitive: false,
     );
-    final nearbyMatch = nearbyMapsNlp.firstMatch(textForMatching);
-    if (nearbyMatch != null) {
-      openGoogleMaps(textForMatching);
-      return cleanText.trim();
+    final appMatch = openAppNlp.firstMatch(text);
+    if (appMatch != null) {
+      final app = appMatch.group(1)?.trim() ?? '';
+      if (app.isNotEmpty) {
+        final lower = app.toLowerCase();
+        if (lower == 'youtube') {
+          return dispatchCommand('mở youtube');
+        }
+        if (lower == 'bản đồ' ||
+            lower == 'google map' ||
+            lower == 'google maps' ||
+            lower == 'gg map') {
+          return dispatchCommand('mở google maps');
+        }
+        AppLog.add('[INTENT] open_app app_name="$app"');
+        AppLog.add('[ACTION] method_channel_call');
+        final res = await openApp(app);
+        final bool success = res['success'] == true;
+        AppLog.add('[ACTION] result success=$success');
+        return AssistantActionResult(
+          success: success,
+          action: AssistantActionType.openApp,
+          message:
+              success
+                  ? 'Đã mở ứng dụng $app'
+                  : 'Không tìm thấy ứng dụng $app trên thiết bị',
+          data: Map<String, Object?>.from(res),
+        );
+      }
     }
 
-    return cleanText.trim();
+    return null;
+  }
+
+  /// Lớp tương thích: Phân tích và làm sạch thẻ tag (để hiển thị lên UI)
+  /// Đồng thời thực thi nền nếu chưa qua dispatchCommand
+  static String interceptAndExecute(String rawText) {
+    if (rawText.isEmpty) return rawText;
+    final clean = stripTags(rawText);
+
+    // Kích hoạt dispatchCommand ngầm nếu chuỗi thô có thẻ hoặc khớp câu lệnh
+    dispatchCommand(rawText);
+
+    return clean;
   }
 }

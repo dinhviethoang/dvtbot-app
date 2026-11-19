@@ -379,7 +379,22 @@ class XiaozhiService {
       bool hasResponse = false;
 
       print('$TAG: 开始发送文本消息: $message');
-      AssistantActionExecutor.interceptAndExecute(message);
+      final actionResult = await AssistantActionExecutor.dispatchCommand(
+        message,
+      );
+      if (actionResult != null) {
+        if (actionResult.success) {
+          AppLog.add('[AI] assistant_reply_suppressed');
+          AppLog.add('[SESSION] active_after_action=true');
+        }
+        _dispatchEvent(
+          XiaozhiServiceEvent(
+            XiaozhiServiceEventType.textMessage,
+            actionResult.message,
+          ),
+        );
+        return actionResult.message;
+      }
 
       // 添加消息监听器，监听所有可能的回复
       void onceListener(XiaozhiServiceEvent event) {
@@ -859,7 +874,7 @@ class XiaozhiService {
             );
             AssistantActionExecutor.updateFloatingAvatarState('speaking');
             if (state == 'sentence_start' && text.isNotEmpty) {
-              final cleaned = AssistantActionExecutor.interceptAndExecute(text);
+              final cleaned = AssistantActionExecutor.stripTags(text);
               print('$TAG: 收到TTS句子: $cleaned');
               _dispatchEvent(
                 XiaozhiServiceEvent(
@@ -888,7 +903,7 @@ class XiaozhiService {
           // 处理语音识别结果
           final String text = jsonData['text'] ?? '';
           if (text.isNotEmpty) {
-            final cleaned = AssistantActionExecutor.interceptAndExecute(text);
+            final cleaned = AssistantActionExecutor.stripTags(text);
             print('$TAG: 收到语音识别结果: $cleaned');
             AssistantActionExecutor.updateFloatingAvatarState('listening');
             // 先分发用户消息事件
@@ -921,7 +936,6 @@ class XiaozhiService {
           }
           final String llmText = jsonData['text'] ?? '';
           if (llmText.isNotEmpty) {
-            AssistantActionExecutor.interceptAndExecute(llmText);
             print('$TAG: 收到LLM消息: $llmText (emotion: $llmEmotion)');
           }
           break;

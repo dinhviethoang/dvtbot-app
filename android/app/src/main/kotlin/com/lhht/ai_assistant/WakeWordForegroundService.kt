@@ -80,6 +80,7 @@ class WakeWordForegroundService : Service() {
                 try {
                     if (running.get() && recorder?.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
                         recorder?.startRecording()
+                        Log.i(TAG, "[AUDIO] owner=standby_wake")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Lỗi khởi động lại AudioRecord sau hội thoại", e)
@@ -138,6 +139,7 @@ class WakeWordForegroundService : Service() {
         recorder = audioRecord
         running.set(true)
         audioRecord.startRecording()
+        Log.i(TAG, "[AUDIO] owner=standby_wake")
         broadcastState(AssistantV2Contract.STATE_STANDBY, "wake_word_ready")
         updateNotification("Đang chờ “TinGTinG ơi”")
 
@@ -169,9 +171,11 @@ class WakeWordForegroundService : Service() {
                     val chunk = if (count == frame.size) frame else frame.copyOf(count)
                     if (!conversationActive && engine?.processAudio(chunk, sampleRate) == true) {
                         conversationActive = true
+                        Log.i(TAG, "[WAKE] phrase_detected=true")
                         try {
                             // Dừng AudioRecord native ngay lập tức để giải phóng hoàn toàn phần cứng Micro cho Flutter
                             audioRecord.stop()
+                            Log.i(TAG, "[AUDIO] owner=conversation")
                         } catch (e: Exception) {
                             Log.w(TAG, "Không thể tạm dừng AudioRecord khi chuyển sang hội thoại", e)
                         }

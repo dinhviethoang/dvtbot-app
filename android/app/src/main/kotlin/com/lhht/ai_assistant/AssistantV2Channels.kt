@@ -80,9 +80,23 @@ class AssistantV2Channels private constructor(
                 "accessibilityBack" -> result.success(
                     XiaozhiAccessibilityService.instance?.performBack() == true
                 )
-                "accessibilityHome" -> result.success(
-                    XiaozhiAccessibilityService.instance?.performHome() == true
-                )
+                "accessibilityHome" -> {
+                    val accSuccess = XiaozhiAccessibilityService.instance?.performHome() == true
+                    if (accSuccess) {
+                        result.success(true)
+                    } else {
+                        try {
+                            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                                addCategory(Intent.CATEGORY_HOME)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            activity.startActivity(homeIntent)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            result.success(false)
+                        }
+                    }
+                }
                 "accessibilityRecents" -> result.success(
                     XiaozhiAccessibilityService.instance?.openRecents() == true
                 )

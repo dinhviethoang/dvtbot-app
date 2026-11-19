@@ -1,0 +1,11 @@
+Bạn đang ở repository `dinhviethoang/dvtbot-app`. Hãy thực hiện sửa lỗi theo tài liệu `XIAOZHI_2_0_REPAIR.md`.
+
+Ưu tiên P0. Không được mở rộng tính năng mới, đổi giao diện thêm, hoặc viết lại dự án trong khi 4 lỗi cốt lõi chưa pass:
+1. Emotion UI không update ổn định.
+2. Action local được thực thi nhưng vẫn gửi nguyên câu lệnh lên AI khiến AI phản hồi mâu thuẫn.
+3. Lệnh thoại không được route qua action dispatcher có kết quả await/structured.
+4. Sleep disconnect server nhưng wake phrase không hề được nhận diện thật.
+
+Bắt đầu bằng audit source và baseline build. Sau đó sửa theo từng P0, build và kiểm thử. Cần phân biệt rõ phần đã chạy thật, phần còn thiếu model wake word và phần chưa thể kiểm thử trên thiết bị.
+Không sử dụng amplitude threshold làm wake word. Không báo xong khi chưa nhận diện đúng câu “TinGTinG ơi” trên điện thoại thật.
+Tạo branch `fix/xiaozhi-2.0-core`, không push thẳng main.

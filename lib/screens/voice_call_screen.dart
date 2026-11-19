@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -255,43 +256,76 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     return RobotFace.faceEmotionFromServer(raw);
   }
 
+  /// P0.1 - Emotion Pipeline duy nhất cho toàn bộ màn hình
+  void _applyEmotion(FaceEmotion emotion, {required String source}) {
+    if (!mounted) return;
+    AppLog.add(
+      '[EMOTION] state=${_sessionState.name} emotion=${emotion.name} source=$source',
+    );
+    if (_currentEmotion != emotion) {
+      setState(() {
+        _currentEmotion = emotion;
+      });
+    }
+    // Nếu có cảm xúc đặc biệt thì khởi động đếm giờ về neutral sau 6s
+    if (emotion != FaceEmotion.neutral &&
+        emotion != FaceEmotion.sleepy &&
+        _sessionState != SessionState.speaking &&
+        _sessionState != SessionState.thinking &&
+        _sessionState != SessionState.standby) {
+      _startIdleEmotionTimer();
+    }
+  }
+
   void _handleEmotionChange() {
     if (!mounted) return;
     final rawEmotion = _xiaozhiService?.emotionNotifier.value;
     final parsed = _resolveEmotion(rawEmotion);
-    _idleEmotionTimer?.cancel();
-    setState(() {
-      _currentEmotion = parsed;
-    });
+    _applyEmotion(parsed, source: 'emotionNotifier');
   }
 
   void _startIdleEmotionTimer() {
     _idleEmotionTimer?.cancel();
     _idleEmotionTimer = Timer(const Duration(seconds: 6), () {
-      if (mounted) {
-        setState(() {
-          _currentEmotion = FaceEmotion.neutral;
-        });
+      if (mounted &&
+          _sessionState != SessionState.speaking &&
+          _sessionState != SessionState.thinking &&
+          _sessionState != SessionState.standby) {
+        _applyEmotion(FaceEmotion.neutral, source: 'idle_timeout');
       }
     });
   }
 
-  /// Xử lý nhận diện cảm xúc theo từng câu nói của robot
+  /// Xử lý nhận diện cảm xúc theo từng câu nói của robot theo quy tắc ưu tiên:
+  /// 1. Emotion từ server
+  /// 2. Emotion từ nội dung câu nói (EmotionDetector)
+  /// 3. Giữ neutral
   void _onRobotSentence(String sentence) {
     final trimmed = sentence.trim();
     if (trimmed.isEmpty || trimmed == _lastDetectedSentence) return;
     _lastDetectedSentence = trimmed;
 
-    final detected = detectEmotionFromText(trimmed);
-    final targetEmotion =
-        detected ??
-        RobotFace.faceEmotionFromServer(_xiaozhiService?.emotionNotifier.value);
-    print('[CamXuc] $trimmed -> ${detected?.name ?? targetEmotion.name}');
+    final rawEmotion = _xiaozhiService?.emotionNotifier.value;
+    FaceEmotion targetEmotion = FaceEmotion.neutral;
+    String source = 'neutral';
 
-    _idleEmotionTimer?.cancel();
-    setState(() {
-      _currentEmotion = targetEmotion;
-    });
+    if (rawEmotion != null &&
+        rawEmotion.isNotEmpty &&
+        rawEmotion.toLowerCase() != 'neutral') {
+      targetEmotion = _resolveEmotion(rawEmotion);
+      source = 'server';
+    } else {
+      final detected = detectEmotionFromText(trimmed);
+      if (detected != null) {
+        targetEmotion = detected;
+        source = 'text';
+      } else {
+        targetEmotion = FaceEmotion.neutral;
+        source = 'fallback';
+      }
+    }
+
+    _applyEmotion(targetEmotion, source: source);
   }
 
   void _saveUserMessage(String text) {
@@ -342,13 +376,14 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
     // Thông báo cho Native Foreground Service mở lại AudioRecord để bắt từ khoá "TinGTinG ơi"
     await _v2Bridge.endConversation();
+    AppLog.add('[AUDIO] owner=standby_wake');
 
     if (mounted) {
       setState(() {
         _sessionState = SessionState.standby;
-        _currentEmotion = FaceEmotion.sleepy;
         _statusText = 'Chờ “TinGTinG ơi”...';
       });
+      _applyEmotion(FaceEmotion.sleepy, source: 'state_standby');
     }
   }
 
@@ -366,14 +401,15 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _isWakingUp = true;
 
     AppLog.add('[DanhThuc] Bat dau quy trinh danh thuc ($reason)');
+    AppLog.add('[AUDIO] owner=conversation');
 
     if (mounted) {
       setState(() {
         _sessionState = SessionState.wakeDetected;
-        _currentEmotion = FaceEmotion.surprised;
         _statusText = 'Đã nhận diện “TinGTinG ơi”';
         _hasError = false;
       });
+      _applyEmotion(FaceEmotion.surprised, source: 'state_wakeDetected');
     }
 
     try {
@@ -414,9 +450,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       if (mounted) {
         setState(() {
           _sessionState = SessionState.listening;
-          _currentEmotion = FaceEmotion.neutral;
           _statusText = 'Đang lắng nghe...';
         });
+        _applyEmotion(FaceEmotion.neutral, source: 'state_listening');
       }
 
       _resetSilenceTimer();
@@ -491,8 +527,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       // Cập nhật cảm xúc nếu tin nhắn có chứa trường 'emotion'
       final dynamic emotion = message['emotion'];
       if (emotion is String && emotion.isNotEmpty) {
-        _idleEmotionTimer?.cancel();
-        _currentEmotion = _resolveEmotion(emotion);
+        _applyEmotion(_resolveEmotion(emotion), source: 'server');
       }
 
       if (type == 'goodbye') {
@@ -563,6 +598,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         _lastDetectedSentence = null;
         final String text = message['text'] ?? '';
         if (text.isNotEmpty) {
+          AppLog.add('[VOICE] stt_transcript_received: $text');
           _saveUserMessage(text);
           _idleEmotionTimer?.cancel();
           _silenceTimer?.cancel();
@@ -584,8 +620,8 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
             return;
           }
 
-          // Kiểm tra và thực thi các lệnh hệ thống / ứng dụng / trợ năng
-          AssistantActionExecutor.interceptAndExecute(text);
+          // P0.2 & P0.3: Điều phối lệnh thoại qua Action Dispatcher bất đồng bộ
+          _dispatchVoiceAction(text);
         }
       } else if (type == 'llm') {
         _lastDetectedSentence = null;
@@ -596,6 +632,46 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
           _sessionState = SessionState.thinking;
           _statusText = 'Đang xử lý...';
         });
+      }
+    }
+  }
+
+  /// P0.2 & P0.3 - Xử lý lệnh thoại qua Action Dispatcher bất đồng bộ
+  Future<void> _dispatchVoiceAction(String text) async {
+    final result = await AssistantActionExecutor.dispatchCommand(text);
+    if (result != null) {
+      if (result.success) {
+        // Hủy bỏ phản hồi từ server AI để tránh câu trả lời mâu thuẫn
+        await _xiaozhiService?.sendAbortMessage();
+        AppLog.add('[AI] assistant_reply_suppressed');
+        AppLog.add('[SESSION] active_after_action=true');
+
+        _saveAssistantMessage(result.message);
+        if (mounted) {
+          setState(() {
+            _latestSubtitle = 'botAi: ${result.message}';
+            _isThinking = false;
+            _isRobotSpeaking = false;
+            _sessionState = SessionState.listening;
+            _statusText = 'Đang lắng nghe...';
+          });
+          _applyEmotion(FaceEmotion.happy, source: 'action_success');
+        }
+
+        // Duy trì phiên làm việc, tự động mở lại ghi âm và reset timer im lặng
+        _resetSilenceTimer();
+        _xiaozhiService?.resumeListeningCall();
+      } else {
+        AppLog.add('[ACTION] dispatch_failed: ${result.message}');
+        if (mounted) {
+          setState(() {
+            _latestSubtitle = 'botAi: ${result.message}';
+            _isThinking = false;
+            _sessionState = SessionState.listening;
+            _statusText = 'Đang lắng nghe...';
+          });
+          _applyEmotion(FaceEmotion.confused, source: 'action_failed');
+        }
       }
     }
   }
@@ -981,6 +1057,35 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
             // Lớp phủ kích hoạt OTA (hiển thị mã 6 số) và lớp phủ lỗi khi cần
             if (_showActivationOverlay) _buildActivationOverlay(),
+
+            // Debug overlay: Hiển thị nhỏ FaceState / FaceEmotion trong build Debug, tự động loại khỏi Release
+            if (kDebugMode)
+              Positioned(
+                top: 52,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: const Color(0xFF00F0FF).withOpacity(0.4),
+                    ),
+                  ),
+                  child: Text(
+                    '${faceState.name} / ${_currentEmotion.name}',
+                    style: const TextStyle(
+                      color: Color(0xFF00F0FF),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

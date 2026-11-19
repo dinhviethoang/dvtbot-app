@@ -114,5 +114,61 @@ void main() {
       expect(names, contains('click_screen_text'));
       expect(names, contains('open_accessibility_settings'));
     });
+
+    test('Non-command query returns null from dispatchCommand', () async {
+      final result = await AssistantActionExecutor.dispatchCommand(
+        'Thời tiết hôm nay thế nào?',
+      );
+      expect(result, isNull);
+    });
+
+    test('AssistantActionType enum has all expected action variants', () {
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.openMaps),
+      );
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.openYoutube),
+      );
+      expect(AssistantActionType.values, contains(AssistantActionType.openApp));
+      expect(AssistantActionType.values, contains(AssistantActionType.back));
+      expect(AssistantActionType.values, contains(AssistantActionType.home));
+      expect(AssistantActionType.values, contains(AssistantActionType.recents));
+      expect(AssistantActionType.values, contains(AssistantActionType.scroll));
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.clickText),
+      );
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.setVolume),
+      );
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.adjustVolume),
+      );
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.toggleFlashlight),
+      );
+      expect(
+        AssistantActionType.values,
+        contains(AssistantActionType.openSettings),
+      );
+    });
+
+    test('AssistantActionResult data model stores properties correctly', () {
+      const res = AssistantActionResult(
+        success: true,
+        action: AssistantActionType.openMaps,
+        message: 'Đã mở Google Maps tìm Hà Nội',
+        data: {'target': 'Hà Nội'},
+      );
+      expect(res.success, isTrue);
+      expect(res.action, equals(AssistantActionType.openMaps));
+      expect(res.message, equals('Đã mở Google Maps tìm Hà Nội'));
+      expect(res.data['target'], equals('Hà Nội'));
+    });
   });
 }

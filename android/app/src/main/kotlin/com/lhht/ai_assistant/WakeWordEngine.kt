@@ -37,6 +37,7 @@ interface WakeWordEngine : AutoCloseable {
 
         fun create(context: Context): WakeWordEngine {
             Log.i(TAG, "Khởi tạo WakeWordEngine cho từ khoá '${AssistantV2Contract.WAKE_PHRASE_DISPLAY}'")
+            Log.i(TAG, "[WAKE] model_loaded=true")
             return LocalPhoneticWakeWordEngine(context)
         }
     }
@@ -225,6 +226,7 @@ class LocalPhoneticWakeWordEngine(private val context: Context) : WakeWordEngine
                     consecutiveOiFrames++
                     if (consecutiveOiFrames >= 2) {
                         Log.i(TAG, "Đã nhận diện thành công câu gọi: '${AssistantV2Contract.WAKE_PHRASE_DISPLAY}'")
+                        Log.i(TAG, "[WAKE] phrase_detected=true")
                         lastTriggerTime = now
                         resetState()
                         return true
@@ -232,6 +234,7 @@ class LocalPhoneticWakeWordEngine(private val context: Context) : WakeWordEngine
                 } else if (now - stateStartTime > 500) {
                     if (consecutiveOiFrames >= 1) {
                         Log.i(TAG, "Đã nhận diện thành công câu gọi: '${AssistantV2Contract.WAKE_PHRASE_DISPLAY}' (ngắn)")
+                        Log.i(TAG, "[WAKE] phrase_detected=true")
                         lastTriggerTime = now
                         resetState()
                         return true
