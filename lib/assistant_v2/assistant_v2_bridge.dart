@@ -25,6 +25,9 @@ class AssistantV2Bridge {
   Future<bool> stopWakeService() async =>
       await _methods.invokeMethod<bool>('stopWakeService') ?? false;
 
+  Future<bool> beginConversation() async =>
+      await _methods.invokeMethod<bool>('beginConversation') ?? false;
+
   Future<bool> endConversation() async =>
       await _methods.invokeMethod<bool>('endConversation') ?? false;
 

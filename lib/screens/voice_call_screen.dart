@@ -20,6 +20,7 @@ import 'package:ai_assistant/utils/app_log.dart';
 import 'package:ai_assistant/screens/log_screen.dart';
 import 'package:ai_assistant/screens/chat_screen.dart';
 import 'package:ai_assistant/widgets/robot_face.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:ai_assistant/assistant_v2/assistant_mode.dart';
 import 'package:ai_assistant/assistant_v2/assistant_v2_bridge.dart';
 import 'package:ai_assistant/services/assistant_action_executor.dart';
@@ -124,11 +125,35 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _nativeEventsSubscription = _v2Bridge.events.listen((event) {
       _handleNativeEvent(event);
     });
-    _v2Bridge.startWakeService();
+    _initWakeServiceSafely();
 
     // Bắt đầu quy trình kích hoạt OTA và kết nối
     _startActivationFlow();
     _startAudioVisualizer();
+  }
+
+  Future<void> _initWakeServiceSafely() async {
+    try {
+      var status = await Permission.microphone.status;
+      if (!status.isGranted) {
+        status = await Permission.microphone.request();
+      }
+      if (status.isGranted) {
+        final started = await _v2Bridge.startWakeService();
+        if (!started && mounted) {
+          AppLog.add('[NativeBridge] Khong the khoi dong WakeService');
+        }
+      } else {
+        AppLog.add('[NativeBridge] Quyen RECORD_AUDIO bi tu choi');
+        if (mounted) {
+          setState(() {
+            _statusText = 'Cần cấp quyền microphone';
+          });
+        }
+      }
+    } catch (e) {
+      AppLog.add('[NativeBridge] Loi khoi dong wake service: $e');
+    }
   }
 
   void _handleNativeEvent(AssistantNativeEvent event) {
@@ -401,6 +426,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _isWakingUp = true;
 
     AppLog.add('[DanhThuc] Bat dau quy trinh danh thuc ($reason)');
+    await _v2Bridge.beginConversation();
     AppLog.add('[AUDIO] owner=conversation');
 
     if (mounted) {
@@ -741,6 +767,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
     _nativeEventsSubscription?.cancel();
+    _v2Bridge.stopWakeService();
     _otaCancelToken?.cancel();
     _idleEmotionTimer?.cancel();
     _controlsTimer?.cancel();

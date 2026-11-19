@@ -567,6 +567,28 @@ class AssistantActionExecutor {
         .trim();
   }
 
+  /// Chuẩn hoá câu lệnh tiếng Việt: loại bỏ kính ngữ / từ đệm ở đầu hoặc cuối câu
+  static String normalizeCommand(String rawText) {
+    String text = rawText.trim();
+    // Bỏ các từ đệm/kính ngữ ở đầu câu (VD: "bạn ơi", "bạn", "ơi", "làm ơn", "hãy", "hãy giúp tôi", "giúp tôi", "xin hãy")
+    text = text.replaceFirst(
+      RegExp(
+        r'^(?:bạn ơi|bạn|ơi|làm ơn|hãy|hãy giúp tôi|giúp tôi|giúp mình|hộ tôi|hộ mình|xin hãy)\s+',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    // Bỏ các từ đệm ở cuối câu (VD: "giúp tôi", "giúp mình", "giùm tôi", "nhé", "nha", "với", "đi", "đi bạn")
+    text = text.replaceFirst(
+      RegExp(
+        r'\s+(?:giúp tôi|giúp mình|giùm tôi|giùm mình|hộ tôi|hộ mình|nhé|nha|với|đi|cho tôi|cho mình|được không|đi bạn|nhé bạn)$',
+        caseSensitive: false,
+      ),
+      '',
+    );
+    return text.trim();
+  }
+
   /// P0.2 - Bộ điều phối hành động bất đồng bộ có cấu trúc (Typed Async Action Dispatcher)
   /// Trả về kết quả thực thi [AssistantActionResult] nếu câu lệnh khớp một hành động,
   /// hoặc null nếu không phải lệnh điều khiển hệ thống/ứng dụng.
@@ -715,15 +737,15 @@ class AssistantActionExecutor {
       );
     }
 
-    // 2. Nhận diện ngôn ngữ tự nhiên tiếng Việt (Vietnamese Natural Language Intent)
-    final textForMatching = text.toLowerCase();
+    // 2. Nhận diện ngôn ngữ tự nhiên tiếng Việt linh hoạt (đã loại bỏ kính ngữ / từ đệm)
+    final cmd = normalizeCommand(text);
 
     // 2.1 Google Maps
     final mapsNlp = RegExp(
       r'^(?:chỉ đường|tìm đường|đường đi|dẫn đường|mở bản đồ|mở google maps?|mở gg maps?)\s*(?:đến|tới|đi|tại)?\s*(.*)$',
       caseSensitive: false,
     );
-    final mapMatch = mapsNlp.firstMatch(text);
+    final mapMatch = mapsNlp.firstMatch(cmd);
     if (mapMatch != null) {
       String dest = mapMatch.group(1)?.trim() ?? '';
       AppLog.add('[INTENT] open_maps destination="$dest"');
@@ -748,19 +770,17 @@ class AssistantActionExecutor {
       r'^(?:tìm|kiếm)\s+(?:quán|cây xăng|tiệm|chỗ)?\s*(cà phê|cafe|cây xăng|quán ăn|nhà hàng|atm|bệnh viện|nhà thuốc)\s+(?:gần đây|gần đó|gần nhất)$',
       caseSensitive: false,
     );
-    if (nearbyMapsNlp.hasMatch(text)) {
-      AppLog.add('[INTENT] open_maps destination="$text"');
+    if (nearbyMapsNlp.hasMatch(cmd)) {
+      AppLog.add('[INTENT] open_maps destination="$cmd"');
       AppLog.add('[ACTION] method_channel_call');
-      final res = await openGoogleMaps(text);
+      final res = await openGoogleMaps(cmd);
       final bool success = res['success'] == true;
       AppLog.add('[ACTION] result success=$success');
       return AssistantActionResult(
         success: success,
         action: AssistantActionType.openMaps,
         message:
-            success
-                ? 'Đã mở Google Maps tìm $text'
-                : 'Không thể mở Google Maps',
+            success ? 'Đã mở Google Maps tìm $cmd' : 'Không thể mở Google Maps',
         data: Map<String, Object?>.from(res),
       );
     }
@@ -770,7 +790,7 @@ class AssistantActionExecutor {
       r'^(?:mở youtube|bật nhạc|nghe bài|tìm trên youtube)\s*(.*)$',
       caseSensitive: false,
     );
-    final ytMatch = ytNlp.firstMatch(text);
+    final ytMatch = ytNlp.firstMatch(cmd);
     if (ytMatch != null) {
       String query = ytMatch.group(1)?.trim() ?? '';
       if (query.toLowerCase().startsWith('tìm ')) {
@@ -796,7 +816,7 @@ class AssistantActionExecutor {
 
     // 2.3 Đèn pin
     final flashNlp = RegExp(r'^(bật|tắt)\s+đèn pin$', caseSensitive: false);
-    final flashMatch = flashNlp.firstMatch(text);
+    final flashMatch = flashNlp.firstMatch(cmd);
     if (flashMatch != null) {
       final state = flashMatch.group(1)?.toLowerCase() == 'bật';
       AppLog.add('[INTENT] toggle_flashlight state=$state');
@@ -819,7 +839,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:tăng|vặn to)\s+âm lượng$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] adjust_volume up=true');
       AppLog.add('[ACTION] method_channel_call');
       final res = await adjustVolume(true);
@@ -836,7 +856,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:giảm|vặn nhỏ)\s+âm lượng$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] adjust_volume up=false');
       AppLog.add('[ACTION] method_channel_call');
       final res = await adjustVolume(false);
@@ -854,7 +874,7 @@ class AssistantActionExecutor {
       r'^(?:chỉnh|đặt|cài)\s+âm lượng\s+(\d+)$',
       caseSensitive: false,
     );
-    final volSetMatch = volSetNlp.firstMatch(text);
+    final volSetMatch = volSetNlp.firstMatch(cmd);
     if (volSetMatch != null) {
       final level = int.tryParse(volSetMatch.group(1) ?? '') ?? 50;
       AppLog.add('[INTENT] set_volume level=$level');
@@ -875,7 +895,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:quay lại|trở lại|trở về|lùi lại|bấm back|ấn back)$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] back');
       AppLog.add('[ACTION] method_channel_call');
       final success = await performBack();
@@ -892,7 +912,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:về màn hình chính|về trang chủ|về home|màn hình chính|ra màn hình chính)$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] home');
       AppLog.add('[ACTION] method_channel_call');
       final success = await performHome();
@@ -908,7 +928,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:đóng|thoát)\s+(?:ứng dụng|app)?\s*(?:này|hiện tại)?$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] close_app -> home');
       AppLog.add('[ACTION] method_channel_call');
       final success = await performHome();
@@ -927,7 +947,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:mở|xem)?\s*(?:đa nhiệm|ứng dụng gần đây|các app gần đây)$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] recents');
       AppLog.add('[ACTION] method_channel_call');
       final success = await openRecents();
@@ -943,7 +963,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:cuộn|lướt|trượt)\s+(?:xuống|trang|tiếp)$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] scroll');
       AppLog.add('[ACTION] method_channel_call');
       final success = await scrollForward();
@@ -960,7 +980,7 @@ class AssistantActionExecutor {
       r'^(?:bấm|nhấn|chọn)\s+(?:vào|nút|chữ|mục)?\s*([a-zA-Z0-9\sÀ-ỹ]+)$',
       caseSensitive: false,
     );
-    final clickMatch = clickNlp.firstMatch(text);
+    final clickMatch = clickNlp.firstMatch(cmd);
     if (clickMatch != null) {
       final label = clickMatch.group(1)?.trim() ?? '';
       if (label.isNotEmpty && label.length <= 40) {
@@ -983,7 +1003,7 @@ class AssistantActionExecutor {
     if (RegExp(
       r'^(?:mở|cài đặt)\s+trợ năng$',
       caseSensitive: false,
-    ).hasMatch(text)) {
+    ).hasMatch(cmd)) {
       AppLog.add('[INTENT] open_settings accessibility');
       AppLog.add('[ACTION] method_channel_call');
       await openAccessibilitySettings();
@@ -997,10 +1017,10 @@ class AssistantActionExecutor {
 
     // 2.11 Mở ứng dụng (OPEN_APP)
     final openAppNlp = RegExp(
-      r'^(?:mở|chạy|bật)\s+(?:ứng dụng|app)?\s*([a-zA-Z0-9\sÀ-ỹ]+)$',
+      r'^(?:mở|chạy|bật)\s+(?:giúp tôi|giúp mình)?\s*(?:ứng dụng|app)?\s*([a-zA-Z0-9\sÀ-ỹ]+)$',
       caseSensitive: false,
     );
-    final appMatch = openAppNlp.firstMatch(text);
+    final appMatch = openAppNlp.firstMatch(cmd);
     if (appMatch != null) {
       final app = appMatch.group(1)?.trim() ?? '';
       if (app.isNotEmpty) {

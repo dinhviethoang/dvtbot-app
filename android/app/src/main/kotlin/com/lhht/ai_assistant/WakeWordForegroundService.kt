@@ -32,6 +32,7 @@ class WakeWordForegroundService : Service() {
         private const val TAG = "XiaozhiWakeService"
         const val ACTION_START = "com.lhht.ai_assistant.WAKE_START"
         const val ACTION_STOP = "com.lhht.ai_assistant.WAKE_STOP"
+        const val ACTION_BEGIN_CONVERSATION = "com.lhht.ai_assistant.BEGIN_CONVERSATION"
         const val ACTION_END_CONVERSATION = "com.lhht.ai_assistant.END_CONVERSATION"
 
         fun start(context: Context) {
@@ -52,13 +53,21 @@ class WakeWordForegroundService : Service() {
                 }
             )
         }
+
+        fun beginConversation(context: Context) {
+            context.startService(
+                Intent(context, WakeWordForegroundService::class.java).apply {
+                    action = ACTION_BEGIN_CONVERSATION
+                }
+            )
+        }
     }
 
     private val running = AtomicBoolean(false)
     private var recorder: AudioRecord? = null
     private var engine: WakeWordEngine? = null
     private var worker: Thread? = null
-    private var conversationActive = false
+    private val conversationActive = AtomicBoolean(false)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -75,8 +84,21 @@ class WakeWordForegroundService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            ACTION_BEGIN_CONVERSATION -> {
+                conversationActive.set(true)
+                try {
+                    if (running.get() && recorder?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                        recorder?.stop()
+                        Log.i(TAG, "[AUDIO] owner=conversation reason=begin_conversation")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Lỗi dừng AudioRecord khi beginConversation", e)
+                }
+                broadcastState(AssistantV2Contract.STATE_CONVERSATION, "begin_conversation")
+                updateNotification("Đang trong phiên trò chuyện")
+            }
             ACTION_END_CONVERSATION -> {
-                conversationActive = false
+                conversationActive.set(false)
                 try {
                     if (running.get() && recorder?.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
                         recorder?.startRecording()
@@ -147,7 +169,7 @@ class WakeWordForegroundService : Service() {
             val frame = ShortArray(512) // 32 ms at 16 kHz
             try {
                 while (running.get()) {
-                    if (conversationActive) {
+                    if (conversationActive.get()) {
                         try {
                             Thread.sleep(100)
                         } catch (_: InterruptedException) {
@@ -169,8 +191,8 @@ class WakeWordForegroundService : Service() {
                     val count = audioRecord.read(frame, 0, frame.size)
                     if (count <= 0) continue
                     val chunk = if (count == frame.size) frame else frame.copyOf(count)
-                    if (!conversationActive && engine?.processAudio(chunk, sampleRate) == true) {
-                        conversationActive = true
+                    if (!conversationActive.get() && engine?.processAudio(chunk, sampleRate) == true) {
+                        conversationActive.set(true)
                         Log.i(TAG, "[WAKE] phrase_detected=true")
                         try {
                             // Dừng AudioRecord native ngay lập tức để giải phóng hoàn toàn phần cứng Micro cho Flutter
@@ -216,7 +238,7 @@ class WakeWordForegroundService : Service() {
         } catch (_: Throwable) {
         }
         engine = null
-        conversationActive = false
+        conversationActive.set(false)
         broadcastState(AssistantV2Contract.STATE_STOPPED, "user_stopped")
     }
 

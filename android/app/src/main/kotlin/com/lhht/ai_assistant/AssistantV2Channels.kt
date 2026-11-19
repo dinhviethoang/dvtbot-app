@@ -65,6 +65,10 @@ class AssistantV2Channels private constructor(
                     WakeWordForegroundService.stop(activity)
                     result.success(true)
                 }
+                "beginConversation" -> {
+                    WakeWordForegroundService.beginConversation(activity)
+                    result.success(true)
+                }
                 "endConversation" -> {
                     activity.startService(
                         Intent(activity, WakeWordForegroundService::class.java).apply {

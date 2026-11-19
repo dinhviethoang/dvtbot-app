@@ -1086,23 +1086,16 @@ class XiaozhiService {
   }
 
   /// 发送中断消息
-  Future<void> sendAbortMessage() async {
+  Future<void> sendAbortMessage({String reason = 'action_dispatched'}) async {
     try {
       if (_webSocketManager != null && _isConnected && _sessionId != null) {
         final abortMessage = {
           'session_id': _sessionId,
           'type': 'abort',
-          'reason': 'wake_word_detected',
+          'reason': reason,
         };
         _webSocketManager?.sendMessage(jsonEncode(abortMessage));
         print('$TAG: 发送中断消息: $abortMessage');
-
-        // 如果当前正在录音，短暂停顿后继续
-        if (_isSpeaking) {
-          await stopListeningCall();
-          await Future.delayed(const Duration(milliseconds: 500));
-          await startListeningCall();
-        }
       }
     } catch (e) {
       print('$TAG: 发送中断消息失败: $e');
