@@ -1,0 +1,8 @@
+{
+  "project": "dinhviethoang/dvtbot-app",
+  "branch_base": "main",
+  "android_namespace": "com.lhht.ai_assistant",
+  "application_id": "com.king.hdvbot",
+  "wake_phrase": "TinGTinG ơi",
+  "note": "Starter integration package; wake-word model adapter intentionally requires a real offline model."
+}

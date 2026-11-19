@@ -24,9 +24,6 @@ class MainActivity : FlutterActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         actionExecutor = AssistantActionExecutor(applicationContext)
-
-        // Kiểm tra và điều hướng cấp quyền vẽ đè màn hình cho bong bóng nhân vật ảo nổi
-        checkAndRequestOverlayPermission()
     }
 
     private fun checkAndRequestOverlayPermission() {
@@ -79,6 +76,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Đăng ký Native Bridge cho Xiaozhi 2.0 (WakeWord Foreground Service & Accessibility)
+        AssistantV2Channels.register(this, flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {

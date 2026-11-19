@@ -10,7 +10,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Các trạng thái hoạt động của robot
-enum FaceState { idle, connecting, listening, thinking, speaking, error }
+enum FaceState {
+  idle,
+  connecting,
+  listening,
+  thinking,
+  speaking,
+  error,
+  standby,
+  wakeDetected,
+  executing,
+}
 
 /// Các biểu cảm cảm xúc của robot
 enum FaceEmotion {
@@ -362,6 +372,24 @@ class _RobotFaceState extends State<RobotFace>
         mouthCurve = -0.35;
         mouthOpen = 0.0;
         break;
+      case FaceState.standby:
+        eyeOpenRatio = 0.40;
+        glowIntensity = 0.35;
+        eyeScaleY *= 0.85;
+        break;
+      case FaceState.wakeDetected:
+        eyeScaleX *= 1.25;
+        eyeScaleY *= 1.25;
+        glowIntensity = 1.30;
+        activeColor = const Color(0xFF00FFFF);
+        mouthCurve = 0.20;
+        break;
+      case FaceState.executing:
+        irisOffsetY = 0.20;
+        glowIntensity = 1.0;
+        eyeScaleX *= 1.08;
+        eyeScaleY *= 1.08;
+        break;
       case FaceState.idle:
         break;
     }
@@ -559,6 +587,14 @@ class _RobotFacePainter extends CustomPainter {
     if (_state == FaceState.connecting) {
       final breath = 0.35 + 0.45 * (0.5 + 0.5 * math.sin(_timeSeconds * 2.8));
       effectiveGlow *= breath;
+    } else if (_state == FaceState.standby) {
+      final breath = 0.25 + 0.35 * (0.5 + 0.5 * math.sin(_timeSeconds * 1.5));
+      effectiveGlow *= breath;
+    } else if (_state == FaceState.wakeDetected) {
+      effectiveGlow = 1.35;
+    } else if (_state == FaceState.executing) {
+      final pulse = 0.75 + 0.25 * (0.5 + 0.5 * math.sin(_timeSeconds * 4.5));
+      effectiveGlow *= pulse;
     } else if (_state == FaceState.error) {
       final flicker = (math.sin(_timeSeconds * 30.0) > -0.6) ? 1.0 : 0.45;
       effectiveGlow *= flicker;

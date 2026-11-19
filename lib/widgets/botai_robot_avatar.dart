@@ -324,6 +324,9 @@ class _BotAiFacePose {
       case FaceState.connecting:
       case FaceState.idle:
       case FaceState.speaking:
+      case FaceState.standby:
+      case FaceState.wakeDetected:
+      case FaceState.executing:
         break;
     }
     return p;

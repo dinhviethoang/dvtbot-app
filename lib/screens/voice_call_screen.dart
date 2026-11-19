@@ -19,16 +19,20 @@ import 'package:ai_assistant/utils/app_log.dart';
 import 'package:ai_assistant/screens/log_screen.dart';
 import 'package:ai_assistant/screens/chat_screen.dart';
 import 'package:ai_assistant/widgets/robot_face.dart';
-import 'package:ai_assistant/widgets/botai_robot_avatar.dart';
+import 'package:ai_assistant/assistant_v2/assistant_mode.dart';
+import 'package:ai_assistant/assistant_v2/assistant_v2_bridge.dart';
+import 'package:ai_assistant/services/assistant_action_executor.dart';
 
 /// Máy trạng thái vòng đời phiên gọi thoại
 enum SessionState {
   activating,
   connecting,
-  sleeping,
+  standby,
+  wakeDetected,
   listening,
   thinking,
   speaking,
+  executing,
   error,
 }
 
@@ -95,6 +99,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
   bool _longPressTriggered = false;
   bool _isWakingUp = false;
 
+  final AssistantV2Bridge _v2Bridge = AssistantV2Bridge();
+  StreamSubscription<AssistantNativeEvent>? _nativeEventsSubscription;
+
   // Lưu lời thoại vào đoạn chat (tránh trùng lặp)
   String? _lastSavedUserSentence;
   String? _lastSavedAssistantSentence;
@@ -112,9 +119,33 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
+    // Lắng nghe sự kiện từ Native Wake Word & Accessibility Service
+    _nativeEventsSubscription = _v2Bridge.events.listen((event) {
+      _handleNativeEvent(event);
+    });
+    _v2Bridge.startWakeService();
+
     // Bắt đầu quy trình kích hoạt OTA và kết nối
     _startActivationFlow();
     _startAudioVisualizer();
+  }
+
+  void _handleNativeEvent(AssistantNativeEvent event) {
+    AppLog.add('[NativeBridge] Event: ${event.mode}, lý do: ${event.reason}');
+    if (event.mode == AssistantMode.wakeDetected) {
+      HapticFeedback.mediumImpact();
+      _wakeUp('Nhận diện câu gọi “TinGTinG ơi”');
+    } else if (event.mode == AssistantMode.standby) {
+      if (_sessionState != SessionState.standby) {
+        _goToSleep(reason: 'Native chuyển sang standby');
+      }
+    } else if (event.mode == AssistantMode.error) {
+      if (mounted) {
+        setState(() {
+          _statusText = event.reason ?? 'Lỗi nhận diện âm thanh';
+        });
+      }
+    }
   }
 
   /// Khởi chạy quy trình kích hoạt OTA
@@ -290,9 +321,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
   }
 
   Future<void> _goToSleep({String reason = 'Server ket thuc phien'}) async {
-    if (!mounted || _sessionState == SessionState.sleeping) return;
+    if (!mounted || _sessionState == SessionState.standby) return;
 
-    AppLog.add('[Phien] Chuyen sang SLEEPING ($reason)');
+    AppLog.add('[Phien] Chuyen sang STANDBY ($reason)');
 
     _silenceTimer?.cancel();
     _silenceTimer = null;
@@ -306,64 +337,23 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _isThinking = false;
     _serverReady = false;
 
-    // Disconnect chủ động để manager không tự reconnect
-    await _xiaozhiService?.disconnect();
+    // Ngừng ghi âm micro phía Flutter trước khi bàn giao cho Native
+    await _xiaozhiService?.stopListeningCall();
+
+    // Thông báo cho Native Foreground Service mở lại AudioRecord để bắt từ khoá "TinGTinG ơi"
+    await _v2Bridge.endConversation();
 
     if (mounted) {
       setState(() {
-        _sessionState = SessionState.sleeping;
+        _sessionState = SessionState.standby;
         _currentEmotion = FaceEmotion.sleepy;
-        _statusText = 'Đang ngủ (Chạm hoặc nói để đánh thức)';
+        _statusText = 'Chờ “TinGTinG ơi”...';
       });
     }
-
-    _startLocalWakeMonitoring();
   }
 
   Future<void> _startLocalWakeMonitoring() async {
-    await _stopLocalWakeMonitoring();
-    if (!mounted || _sessionState != SessionState.sleeping) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final bool enabled = prefs.getBool('voice_wake_enabled') ?? true;
-    if (!enabled) {
-      AppLog.add('[DanhThuc] Danh thuc bang giong noi dang TAT');
-      return;
-    }
-
-    final double threshold = prefs.getDouble('voice_wake_threshold') ?? 0.0316;
-    AppLog.add(
-      '[DanhThuc] Bat micro cuc bo theo doi do to (nguong: ${threshold.toStringAsFixed(4)})',
-    );
-
-    try {
-      if (!AudioUtil.isRecording) {
-        await AudioUtil.startRecording();
-      }
-    } catch (e) {
-      AppLog.add('[DanhThuc] Loi bat micro cuc bo: $e');
-      return;
-    }
-
-    DateTime? loudStartTime;
-
-    _amplitudeSubscription = AudioUtil.amplitudeStream.listen((amp) {
-      if (_sessionState != SessionState.sleeping) return;
-
-      if (amp >= threshold) {
-        loudStartTime ??= DateTime.now();
-        final ms = DateTime.now().difference(loudStartTime!).inMilliseconds;
-        if (ms >= 300) {
-          loudStartTime = null;
-          AppLog.add(
-            '[DanhThuc] Do to vuot nguong >= 300ms ($ms ms, amp=${amp.toStringAsFixed(3)})',
-          );
-          _wakeUp('Giọng nói (độ to ${(amp * 100).toStringAsFixed(1)}%)');
-        }
-      } else {
-        loudStartTime = null;
-      }
-    });
+    // Không dùng amplitude thô; việc lắng nghe được xử lý hoàn toàn bởi Native WakeWordForegroundService
   }
 
   Future<void> _stopLocalWakeMonitoring() async {
@@ -376,13 +366,12 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _isWakingUp = true;
 
     AppLog.add('[DanhThuc] Bat dau quy trinh danh thuc ($reason)');
-    await _stopLocalWakeMonitoring();
 
     if (mounted) {
       setState(() {
-        _sessionState = SessionState.connecting;
-        _currentEmotion = FaceEmotion.neutral;
-        _statusText = 'Đang đánh thức...';
+        _sessionState = SessionState.wakeDetected;
+        _currentEmotion = FaceEmotion.surprised;
+        _statusText = 'Đã nhận diện “TinGTinG ơi”';
         _hasError = false;
       });
     }
@@ -394,33 +383,19 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
       await _xiaozhiService!.switchToVoiceCallMode();
 
-      // QUAN TRỌNG: Xóa session_id cũ để bắt buộc lấy session_id mới từ hello mới
-      _xiaozhiService!.clearSessionId();
-
-      // Kết nối WebSocket
-      await _xiaozhiService!.connect();
-
-      // Chờ 'hello' tối đa 8 giây
-      AppLog.add('[DanhThuc] Cho hello tu server (toi da 8s)...');
-      final sessionId = await _xiaozhiService!.waitForHello(
-        timeout: const Duration(seconds: 8),
-      );
-
-      if (sessionId == null) {
-        AppLog.add('[DanhThuc] Khong nhan duoc hello sau 8s');
-        if (mounted) {
-          _showCustomSnackbar(
-            message: 'Không nhận được phản hồi sau 8s',
-            icon: Icons.error_outline,
-            iconColor: AppTheme.errorColor,
-          );
+      // Nếu socket chưa kết nối thì kết nối và chờ hello
+      if (!_xiaozhiService!.isConnected) {
+        _xiaozhiService!.clearSessionId();
+        await _xiaozhiService!.connect();
+        AppLog.add('[DanhThuc] Cho hello tu server (toi da 8s)...');
+        final sessionId = await _xiaozhiService!.waitForHello(
+          timeout: const Duration(seconds: 8),
+        );
+        if (sessionId == null) {
+          throw Exception('Hết 8s chờ hello từ server');
         }
-        _isWakingUp = false;
-        await _goToSleep(reason: 'Hết 8s chờ hello');
-        return;
+        AppLog.add('[DanhThuc] Nhan hello thanh cong, session_id: $sessionId');
       }
-
-      AppLog.add('[DanhThuc] Nhan hello thanh cong, session_id: $sessionId');
 
       if (!mounted) {
         _isWakingUp = false;
@@ -433,14 +408,16 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       _serverReady = true;
       _hasError = false;
 
-      // Gửi listen start (mode auto) và bắt đầu gửi audio
+      // Gửi listen start (mode auto) và bắt đầu thu âm từ micro
       await _xiaozhiService!.startListeningCall();
 
-      setState(() {
-        _sessionState = SessionState.listening;
-        _currentEmotion = FaceEmotion.neutral;
-        _statusText = 'Đang lắng nghe...';
-      });
+      if (mounted) {
+        setState(() {
+          _sessionState = SessionState.listening;
+          _currentEmotion = FaceEmotion.neutral;
+          _statusText = 'Đang lắng nghe...';
+        });
+      }
 
       _resetSilenceTimer();
     } catch (e) {
@@ -491,7 +468,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       _longPressTriggered = false;
       return;
     }
-    if (_sessionState == SessionState.sleeping) {
+    if (_sessionState == SessionState.standby) {
       AppLog.add('[DanhThuc] Cham vao khuon mat de danh thuc');
       _wakeUp('Chạm màn hình');
     } else {
@@ -535,7 +512,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         });
 
         // Tự động bắt đầu thu âm sau khi máy chủ sẵn sàng (đã có session_id)
-        if (!_isSpeaking && _sessionState != SessionState.sleeping) {
+        if (!_isSpeaking && _sessionState != SessionState.standby) {
           _startSpeaking();
         }
       } else if (type == 'tts') {
@@ -558,7 +535,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
             }
           });
         } else if (state == 'sentence_end' || state == 'stop') {
-          if (_sessionState != SessionState.sleeping) {
+          if (_sessionState != SessionState.standby) {
             setState(() {
               _isRobotSpeaking = false;
               _sessionState = SessionState.listening;
@@ -573,7 +550,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
           _startIdleEmotionTimer();
 
           // Khi tts 'stop': đảm bảo app đang ở trạng thái lắng nghe và reset timer 20s
-          if (state == 'stop' && _sessionState != SessionState.sleeping) {
+          if (state == 'stop' && _sessionState != SessionState.standby) {
             if (_isSpeaking) {
               _xiaozhiService?.resumeListeningCall();
             } else {
@@ -595,6 +572,20 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
             _sessionState = SessionState.thinking;
             _statusText = 'Đang suy nghĩ...';
           });
+
+          // Kiểm tra câu lệnh kết thúc hội thoại
+          final lower = text.toLowerCase();
+          if (lower.contains('tạm biệt') ||
+              lower.contains('ngủ đi') ||
+              lower.contains('dừng lại')) {
+            Future.delayed(const Duration(milliseconds: 1000), () {
+              _goToSleep(reason: 'Người dùng chào tạm biệt / bảo ngủ đi');
+            });
+            return;
+          }
+
+          // Kiểm tra và thực thi các lệnh hệ thống / ứng dụng / trợ năng
+          AssistantActionExecutor.interceptAndExecute(text);
         }
       } else if (type == 'llm') {
         _lastDetectedSentence = null;
@@ -657,7 +648,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
       case XiaozhiServiceEventType.disconnected:
         AppLog.add('[KetNoi] Event disconnected');
-        if (_sessionState != SessionState.sleeping &&
+        if (_sessionState != SessionState.standby &&
             _sessionState != SessionState.activating) {
           _goToSleep(reason: 'Mất kết nối server');
         }
@@ -673,6 +664,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     // Khôi phục lại chế độ màn hình thông thường
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
+    _nativeEventsSubscription?.cancel();
     _otaCancelToken?.cancel();
     _idleEmotionTimer?.cancel();
     _controlsTimer?.cancel();
@@ -683,11 +675,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
     _xiaozhiService?.removeListener(_handleServiceEvent);
     _xiaozhiService?.emotionNotifier.removeListener(_handleEmotionChange);
-    _xiaozhiService?.switchToChatMode();
     _callTimer?.cancel();
     _audioVisualizerTimer?.cancel();
     _animationController.dispose();
-    _xiaozhiService?.stopPlayback();
     super.dispose();
   }
 
@@ -745,7 +735,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
   // Bắt đầu thu âm micro
   void _startSpeaking() {
-    if (_sessionState == SessionState.sleeping) {
+    if (_sessionState == SessionState.standby) {
       _wakeUp('Bật micro');
       return;
     }
@@ -801,7 +791,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     setState(() {
       _isRobotSpeaking = false;
       _isThinking = false;
-      if (_sessionState != SessionState.sleeping) {
+      if (_sessionState != SessionState.standby) {
         _sessionState = SessionState.listening;
         _statusText = 'Đang lắng nghe...';
       }
@@ -822,8 +812,8 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _resetControlsTimer();
     AppLog.add('[NutMic] Nguoi dung bam nut MIC lon');
 
-    // Neu dang sleeping thi danh thuc
-    if (_sessionState == SessionState.sleeping) {
+    // Neu dang standby thi danh thuc
+    if (_sessionState == SessionState.standby) {
       _wakeUp('Nút MIC lớn');
       return;
     }
@@ -870,7 +860,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       }
       return FaceState.connecting;
     }
-    if (_hasError && _sessionState != SessionState.sleeping) {
+    if (_hasError && _sessionState != SessionState.standby) {
       return FaceState.error;
     }
     switch (_sessionState) {
@@ -878,14 +868,18 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         return (_otaError != null) ? FaceState.error : FaceState.connecting;
       case SessionState.connecting:
         return FaceState.connecting;
-      case SessionState.sleeping:
-        return FaceState.idle;
+      case SessionState.standby:
+        return FaceState.standby;
+      case SessionState.wakeDetected:
+        return FaceState.wakeDetected;
       case SessionState.listening:
         return FaceState.listening;
       case SessionState.thinking:
         return FaceState.thinking;
       case SessionState.speaking:
         return FaceState.speaking;
+      case SessionState.executing:
+        return FaceState.executing;
       case SessionState.error:
         return FaceState.error;
     }
@@ -937,7 +931,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     final double currentVolume =
         _audioLevels.isNotEmpty ? _audioLevels.last : 0.0;
     final double faceVolume =
-        (_sessionState == SessionState.sleeping) ? 0.0 : currentVolume;
+        (_sessionState == SessionState.standby) ? 0.0 : currentVolume;
 
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
@@ -949,36 +943,21 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                 // 1. Thanh tiêu đề trên cùng: Back, botAi, trạng thái, âm thanh, ngắt lời, nhật ký
                 _buildTopHeader(),
 
-                // 2. Avatar robot bạc-trắng với mạch điện tử và khuôn mặt động ở giữa
+                // 2. Chỉ hiển thị hai mắt và miệng robot phát sáng neon-blue trên nền đen tuyệt đối
                 Expanded(
                   child: Center(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final double size = math
-                            .min(
-                              constraints.maxWidth * 0.92,
-                              constraints.maxHeight * 0.95,
-                            )
-                            .clamp(180.0, 480.0);
-
-                        return GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTapDown: (_) => _handlePointerDown(),
-                          onTapUp: (_) => _handlePointerUpOrCancel(),
-                          onTapCancel: () => _handlePointerUpOrCancel(),
-                          onTap: _handleFaceTap,
-                          child: SizedBox.square(
-                            dimension: size,
-                            child: BotAiRobotAvatar(
-                              state: faceState,
-                              emotion: _currentEmotion,
-                              volume: faceVolume,
-                              size: size,
-                              color: const Color(0xFF00F0FF),
-                            ),
-                          ),
-                        );
-                      },
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: (_) => _handlePointerDown(),
+                      onTapUp: (_) => _handlePointerUpOrCancel(),
+                      onTapCancel: () => _handlePointerUpOrCancel(),
+                      onTap: _handleFaceTap,
+                      child: RobotFace(
+                        state: faceState,
+                        emotion: _currentEmotion,
+                        volume: faceVolume,
+                        color: const Color(0xFF00F0FF),
+                      ),
                     ),
                   ),
                 ),
@@ -1056,7 +1035,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                         color:
                             _hasError
                                 ? AppTheme.errorColor
-                                : (_sessionState == SessionState.sleeping
+                                : (_sessionState == SessionState.standby
                                     ? Colors.grey
                                     : (_isConnected
                                         ? const Color(0xFF00E676)
@@ -1226,7 +1205,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
           onPressed: () async {
             _otaCancelToken?.cancel();
             await _xiaozhiService?.sendAbortMessage();
+            await _xiaozhiService?.stopListeningCall();
             _xiaozhiService?.stopPlayback();
+            await _v2Bridge.endConversation();
             if (mounted) {
               Navigator.pop(context);
             }
