@@ -84,9 +84,9 @@ dependency_overrides:
 # 配置应用图标
 flutter_launcher_icons:
   android: true
-  image_path: "robot_3.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "robot_3.png"
+  image_path: "assets/images/botai_robot_icon.png"
+  adaptive_icon_background: "#070B12"
+  adaptive_icon_foreground: "assets/images/botai_robot_icon.png"
 
 # The following section is specific to Flutter packages.
 flutter:
@@ -98,6 +98,8 @@ flutter:
 
   assets:
     - assets/images/logo_king.png
+    - assets/images/botai_robot_shell.png
+    - assets/images/botai_robot_icon.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

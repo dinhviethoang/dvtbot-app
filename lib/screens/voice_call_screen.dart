@@ -17,7 +17,9 @@ import 'package:ai_assistant/utils/emotion_detector.dart';
 import 'package:ai_assistant/utils/audio_util.dart';
 import 'package:ai_assistant/utils/app_log.dart';
 import 'package:ai_assistant/screens/log_screen.dart';
+import 'package:ai_assistant/screens/chat_screen.dart';
 import 'package:ai_assistant/widgets/robot_face.dart';
+import 'package:ai_assistant/widgets/botai_robot_avatar.dart';
 
 /// Máy trạng thái vòng đời phiên gọi thoại
 enum SessionState {
@@ -30,8 +32,8 @@ enum SessionState {
   error,
 }
 
-/// Màn hình gọi thoại toàn màn hình phong cách mặt robot HDVbot
-/// Tối ưu đặc biệt cho Samsung J2 Pro (540x960, RAM 1.5GB)
+/// Màn hình gọi thoại botAi với avatar robot mạch điện tử
+/// Tối ưu đặc biệt cho Samsung J2 Pro (540x960, RAM 1.5GB) và các dòng máy Android mới
 class VoiceCallScreen extends StatefulWidget {
   final Conversation conversation;
   final XiaozhiConfig xiaozhiConfig;
@@ -130,9 +132,10 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     });
 
     try {
-      final mac = DeviceUtil.isValidMac(_currentConfig.macAddress)
-          ? _currentConfig.macAddress
-          : await DeviceUtil.getDeviceMac();
+      final mac =
+          DeviceUtil.isValidMac(_currentConfig.macAddress)
+              ? _currentConfig.macAddress
+              : await DeviceUtil.getDeviceMac();
       final clientId = await DeviceUtil.getClientId();
 
       if (_currentConfig.macAddress != mac) {
@@ -202,9 +205,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
       _xiaozhiService!.emotionNotifier.addListener(_handleEmotionChange);
 
       // Lấy cảm xúc ban đầu nếu đã có (mặc định neutral)
-      _currentEmotion = _resolveEmotion(
-        _xiaozhiService!.emotionNotifier.value,
-      );
+      _currentEmotion = _resolveEmotion(_xiaozhiService!.emotionNotifier.value);
 
       _connectToVoiceService();
     } catch (e) {
@@ -251,7 +252,8 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     _lastDetectedSentence = trimmed;
 
     final detected = detectEmotionFromText(trimmed);
-    final targetEmotion = detected ??
+    final targetEmotion =
+        detected ??
         RobotFace.faceEmotionFromServer(_xiaozhiService?.emotionNotifier.value);
     print('[CamXuc] $trimmed -> ${detected?.name ?? targetEmotion.name}');
 
@@ -330,7 +332,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     }
 
     final double threshold = prefs.getDouble('voice_wake_threshold') ?? 0.0316;
-    AppLog.add('[DanhThuc] Bat micro cuc bo theo doi do to (nguong: ${threshold.toStringAsFixed(4)})');
+    AppLog.add(
+      '[DanhThuc] Bat micro cuc bo theo doi do to (nguong: ${threshold.toStringAsFixed(4)})',
+    );
 
     try {
       if (!AudioUtil.isRecording) {
@@ -351,7 +355,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         final ms = DateTime.now().difference(loudStartTime!).inMilliseconds;
         if (ms >= 300) {
           loudStartTime = null;
-          AppLog.add('[DanhThuc] Do to vuot nguong >= 300ms ($ms ms, amp=${amp.toStringAsFixed(3)})');
+          AppLog.add(
+            '[DanhThuc] Do to vuot nguong >= 300ms ($ms ms, amp=${amp.toStringAsFixed(3)})',
+          );
           _wakeUp('Giọng nói (độ to ${(amp * 100).toStringAsFixed(1)}%)');
         }
       } else {
@@ -546,9 +552,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
             _isRobotSpeaking = true;
             _isThinking = false;
             _sessionState = SessionState.speaking;
-            _statusText = 'HDVbot đang nói...';
+            _statusText = 'botAi đang nói...';
             if (text.isNotEmpty) {
-              _latestSubtitle = 'HDVbot: $text';
+              _latestSubtitle = 'botAi: $text';
             }
           });
         } else if (state == 'sentence_end' || state == 'stop') {
@@ -634,11 +640,11 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
         }
         setState(() {
           if (rawText.isNotEmpty) {
-            _latestSubtitle = 'HDVbot: $rawText';
+            _latestSubtitle = 'botAi: $rawText';
           }
           _isRobotSpeaking = true;
           _isThinking = false;
-          _statusText = 'HDVbot đang nói...';
+          _statusText = 'botAi đang nói...';
         });
         break;
 
@@ -651,7 +657,8 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
 
       case XiaozhiServiceEventType.disconnected:
         AppLog.add('[KetNoi] Event disconnected');
-        if (_sessionState != SessionState.sleeping && _sessionState != SessionState.activating) {
+        if (_sessionState != SessionState.sleeping &&
+            _sessionState != SessionState.activating) {
           _goToSleep(reason: 'Mất kết nối server');
         }
         break;
@@ -711,30 +718,29 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
   }
 
   void _startAudioVisualizer() {
-    _audioVisualizerTimer = Timer.periodic(
-      const Duration(milliseconds: 100),
-      (timer) {
-        if (_isConnected && mounted) {
-          setState(() {
-            for (int i = 0; i < _audioLevels.length - 1; i++) {
-              _audioLevels[i] = _audioLevels[i + 1];
-            }
+    _audioVisualizerTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) {
+      if (_isConnected && mounted) {
+        setState(() {
+          for (int i = 0; i < _audioLevels.length - 1; i++) {
+            _audioLevels[i] = _audioLevels[i + 1];
+          }
 
-            if (_isRobotSpeaking) {
-              // Nhịp theo giọng robot đang nói
-              _audioLevels[_audioLevels.length - 1] =
-                  0.15 + (0.75 * (0.5 + 0.5 * _animationController.value));
-            } else if (_isSpeaking) {
-              // Nhịp theo micro người dùng
-              _audioLevels[_audioLevels.length - 1] =
-                  0.10 + (0.60 * (0.5 + 0.5 * _animationController.value));
-            } else {
-              _audioLevels[_audioLevels.length - 1] = 0.05;
-            }
-          });
-        }
-      },
-    );
+          if (_isRobotSpeaking) {
+            // Nhịp theo giọng robot đang nói
+            _audioLevels[_audioLevels.length - 1] =
+                0.15 + (0.75 * (0.5 + 0.5 * _animationController.value));
+          } else if (_isSpeaking) {
+            // Nhịp theo micro người dùng
+            _audioLevels[_audioLevels.length - 1] =
+                0.10 + (0.60 * (0.5 + 0.5 * _animationController.value));
+          } else {
+            _audioLevels[_audioLevels.length - 1] = 0.05;
+          }
+        });
+      }
+    });
   }
 
   // Bắt đầu thu âm micro
@@ -910,49 +916,91 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     });
   }
 
+  void _switchToChat() {
+    _otaCancelToken?.cancel();
+    _xiaozhiService?.stopPlayback();
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(conversation: widget.conversation),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final faceState = _resolveFaceState();
     final double currentVolume =
         _audioLevels.isNotEmpty ? _audioLevels.last : 0.0;
-    // Khi robot dang noi hoac dang ngu, truyen volume 0 de RobotFace khong giat
     final double faceVolume =
-        (faceState == FaceState.speaking || _sessionState == SessionState.sleeping) ? 0.0 : currentVolume;
+        (_sessionState == SessionState.sleeping) ? 0.0 : currentVolume;
 
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => _handlePointerDown(),
-        onTapUp: (_) => _handlePointerUpOrCancel(),
-        onTapCancel: () => _handlePointerUpOrCancel(),
-        onTap: _handleFaceTap,
+      body: SafeArea(
         child: Stack(
-          fit: StackFit.expand,
           children: [
-            // Khuôn mặt robot chiếm toàn màn hình nền đen tuyền
-            Positioned.fill(
-              child: Container(
-                color: const Color(0xFF000000),
-                child: RobotFace(
-                  state: faceState,
-                  emotion: _currentEmotion,
-                  volume: faceVolume,
-                  color: const Color(0xFF00F0FF),
+            Column(
+              children: [
+                // 1. Thanh tiêu đề trên cùng: Back, botAi, trạng thái, âm thanh, ngắt lời, nhật ký
+                _buildTopHeader(),
+
+                // 2. Avatar robot bạc-trắng với mạch điện tử và khuôn mặt động ở giữa
+                Expanded(
+                  child: Center(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double size = math
+                            .min(
+                              constraints.maxWidth * 0.92,
+                              constraints.maxHeight * 0.95,
+                            )
+                            .clamp(180.0, 480.0);
+
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapDown: (_) => _handlePointerDown(),
+                          onTapUp: (_) => _handlePointerUpOrCancel(),
+                          onTapCancel: () => _handlePointerUpOrCancel(),
+                          onTap: _handleFaceTap,
+                          child: SizedBox.square(
+                            dimension: size,
+                            child: BotAiRobotAvatar(
+                              state: faceState,
+                              emotion: _currentEmotion,
+                              volume: faceVolume,
+                              size: size,
+                              color: const Color(0xFF00F0FF),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
+
+                // 3. Sóng âm cyan (Waveform)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 6.0,
+                  ),
+                  child: _buildAudioWaveform(),
+                ),
+
+                // 4. Thanh điều khiển dưới cùng: Nhập văn bản, Microphone, Kết thúc
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 6, 24, 16),
+                  child: _buildBottomControls(),
+                ),
+              ],
             ),
 
-            // Thanh điều khiển nhỏ mờ ở mép dưới khi chạm vào màn hình (tự ẩn sau 4 giây)
-            if (_showControls && !_showActivationOverlay)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 12,
-                child: _buildBottomControlBar(),
-              ),
-
-            // Lớp phủ kích hoạt (hiển thị mã 6 số) và lớp phủ lỗi khi cần (đặt trên khuôn mặt)
+            // Lớp phủ kích hoạt OTA (hiển thị mã 6 số) và lớp phủ lỗi khi cần
             if (_showActivationOverlay) _buildActivationOverlay(),
           ],
         ),
@@ -960,54 +1008,44 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
     );
   }
 
-  /// Thanh điều khiển nhỏ mờ ở mép dưới màn hình
-  Widget _buildBottomControlBar() {
+  /// Thanh tiêu đề phía trên: Back, tên botAi, trạng thái kết nối, điều khiển âm thanh
+  Widget _buildTopHeader() {
     final isMuted = _xiaozhiService?.isMuted ?? false;
-    final bool isListeningActive = _isSpeaking && _sessionState == SessionState.listening;
 
-    return Center(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _resetControlsTimer,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xCC000000), // Nền đen mờ 80%
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: const Color(0x5500F0FF),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.6),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Row(
+        children: [
+          // Nút quay lại bo tròn
+          _buildHeaderIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+            tooltip: 'Quay lại',
+            onPressed: () {
+              _otaCancelToken?.cancel();
+              _xiaozhiService?.stopPlayback();
+              Navigator.pop(context);
+            },
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Nút quay lại bo tròn nhỏ
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                color: Colors.white70,
-                tooltip: 'Quay lại',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () {
-                  _otaCancelToken?.cancel();
-                  _xiaozhiService?.stopPlayback();
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(width: 6),
+          const SizedBox(width: 12),
 
-              // Dòng trạng thái ngắn
-              Container(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Row(
+          // Tên ứng dụng botAi & chấm trạng thái hoạt động
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'botAi',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
@@ -1015,11 +1053,25 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                       height: 8,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _hasError
-                            ? AppTheme.errorColor
-                            : (_isConnected
-                                ? const Color(0xFF00E676)
-                                : Colors.orangeAccent),
+                        color:
+                            _hasError
+                                ? AppTheme.errorColor
+                                : (_sessionState == SessionState.sleeping
+                                    ? Colors.grey
+                                    : (_isConnected
+                                        ? const Color(0xFF00E676)
+                                        : Colors.orangeAccent)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_hasError
+                                    ? AppTheme.errorColor
+                                    : (_isConnected
+                                        ? const Color(0xFF00E676)
+                                        : Colors.orangeAccent))
+                                .withOpacity(0.6),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -1037,91 +1089,228 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
+              ],
+            ),
+          ),
 
-              // Nút MIC LỚN: bấm để nghe ngay (ngắt lời nếu đang nói), bấm lần nữa để dừng
-              _buildSmallCircleButton(
-                icon: isListeningActive ? Icons.mic_rounded : Icons.mic_none_rounded,
-                color: isListeningActive ? const Color(0xFF070B12) : const Color(0xFF00F0FF),
-                backgroundColor: isListeningActive
-                    ? const Color(0xFF00F0FF)
-                    : const Color(0x3300F0FF),
-                size: 46,
-                onPressed: _handleBigMicButton,
-              ),
-              const SizedBox(width: 8),
-
-              // Nút tắt / mở loa (mute)
-              _buildSmallCircleButton(
-                icon: isMuted ? Icons.mic_off_rounded : Icons.volume_up_rounded,
-                color: isMuted ? AppTheme.errorColor : Colors.white70,
-                backgroundColor: const Color(0x22FFFFFF),
-                size: 36,
-                onPressed: () {
-                  _xiaozhiService?.toggleMute();
-                  setState(() {});
-                  _resetControlsTimer();
-                },
-              ),
-              const SizedBox(width: 8),
-
-              // Nút ngắt lời robot
-              _buildSmallCircleButton(
+          // Nút ngắt lời robot (nổi bật khi robot đang nói)
+          if (_isRobotSpeaking)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: _buildHeaderIconButton(
                 icon: Icons.pan_tool_rounded,
                 color: Colors.white,
                 backgroundColor: const Color(0xCCFF9100),
-                size: 36,
-                onPressed: () {
-                  _sendAbortMessage();
-                  _resetControlsTimer();
-                },
+                tooltip: 'Ngắt lời robot',
+                onPressed: _sendAbortMessage,
               ),
-              const SizedBox(width: 8),
+            ),
 
-              // Nút kết thúc cuộc gọi
-              _buildSmallCircleButton(
-                icon: Icons.call_end_rounded,
-                color: Colors.white,
-                backgroundColor: AppTheme.errorColor,
-                size: 38,
-                onPressed: () async {
-                  _otaCancelToken?.cancel();
-                  await _xiaozhiService?.sendAbortMessage();
-                  _xiaozhiService?.stopPlayback();
-                  if (mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-              ),
-            ],
+          // Nút tắt / mở loa (mute)
+          _buildHeaderIconButton(
+            icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+            color: isMuted ? AppTheme.errorColor : Colors.white70,
+            tooltip: isMuted ? 'Bật âm thanh' : 'Tắt âm thanh',
+            onPressed: () {
+              _xiaozhiService?.toggleMute();
+              setState(() {});
+            },
+          ),
+          const SizedBox(width: 8),
+
+          // Nút xem nhật ký hệ thống
+          _buildHeaderIconButton(
+            icon: Icons.article_outlined,
+            color: Colors.white70,
+            tooltip: 'Nhật ký hệ thống',
+            onPressed: _openLogScreen,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Nút icon hình tròn nhỏ ở thanh tiêu đề
+  Widget _buildHeaderIconButton({
+    required IconData icon,
+    required Color color,
+    Color backgroundColor = const Color(0x1AFFFFFF),
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0x3300F0FF), width: 0.8),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          icon: Icon(icon, color: color, size: 18),
+          tooltip: tooltip,
+          onPressed: onPressed,
+        ),
+      ),
+    );
+  }
+
+  /// Dải sóng âm cyan hiển thị mức âm thanh động
+  Widget _buildAudioWaveform() {
+    return SizedBox(
+      height: 36,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: List.generate(_audioLevels.length, (index) {
+          final level = _audioLevels[index].clamp(0.06, 1.0);
+          final barHeight = (level * 32.0).clamp(4.0, 32.0);
+          return Container(
+            width: 3.5,
+            height: barHeight,
+            margin: const EdgeInsets.symmetric(horizontal: 2.0),
+            decoration: BoxDecoration(
+              color: const Color(
+                0xFF00F0FF,
+              ).withOpacity((0.35 + 0.65 * level).clamp(0.0, 1.0)),
+              borderRadius: BorderRadius.circular(2.0),
+              boxShadow: [
+                if (level > 0.3)
+                  BoxShadow(
+                    color: const Color(0xFF00F0FF).withOpacity(0.5),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  /// Thanh điều khiển chân trang: Nhập văn bản | Micro lớn | Kết thúc
+  Widget _buildBottomControls() {
+    final bool isListeningActive =
+        _isSpeaking && _sessionState == SessionState.listening;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // 1. Nút chuyển sang chế độ chat nhập văn bản
+        _buildBottomActionButton(
+          icon: Icons.chat_bubble_outline_rounded,
+          color: const Color(0xFF00F0FF),
+          backgroundColor: const Color(0x1A00F0FF),
+          borderColor: const Color(0x5500F0FF),
+          size: 52,
+          tooltip: 'Nhập văn bản',
+          onPressed: _switchToChat,
+        ),
+
+        // 2. Nút Microphone lớn ở giữa
+        _buildBigMicButton(isListeningActive: isListeningActive),
+
+        // 3. Nút kết thúc cuộc gọi
+        _buildBottomActionButton(
+          icon: Icons.call_end_rounded,
+          color: Colors.white,
+          backgroundColor: AppTheme.errorColor,
+          borderColor: AppTheme.errorColor.withOpacity(0.6),
+          size: 52,
+          tooltip: 'Kết thúc cuộc gọi',
+          onPressed: () async {
+            _otaCancelToken?.cancel();
+            await _xiaozhiService?.sendAbortMessage();
+            _xiaozhiService?.stopPlayback();
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Nút Microphone chính lớn
+  Widget _buildBigMicButton({required bool isListeningActive}) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color:
+            isListeningActive
+                ? const Color(0xFF00F0FF)
+                : const Color(0xFF0A1520),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFF00F0FF), width: 2.0),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(
+              0xFF00F0FF,
+            ).withOpacity(isListeningActive ? 0.7 : 0.25),
+            blurRadius: isListeningActive ? 22 : 10,
+            spreadRadius: isListeningActive ? 3 : 1,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: _handleBigMicButton,
+          child: Center(
+            child: Icon(
+              isListeningActive ? Icons.mic_rounded : Icons.mic_none_rounded,
+              color:
+                  isListeningActive
+                      ? const Color(0xFF070B12)
+                      : const Color(0xFF00F0FF),
+              size: 36,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSmallCircleButton({
+  /// Nút hành động tròn ở thanh dưới
+  Widget _buildBottomActionButton({
     required IconData icon,
     required Color color,
     required Color backgroundColor,
+    required Color borderColor,
     required double size,
+    required String tooltip,
     required VoidCallback onPressed,
   }) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: Center(
-            child: Icon(icon, color: color, size: size * 0.5),
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+          border: Border.all(color: borderColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onPressed,
+            child: Center(child: Icon(icon, color: color, size: size * 0.46)),
           ),
         ),
       ),
@@ -1258,7 +1447,8 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                                 ),
                               ),
                             ),
-                          ] else if (_isOtaConnecting && _activationCode == null) ...[
+                          ] else if (_isOtaConnecting &&
+                              _activationCode == null) ...[
                             // Trạng thái ĐANG GỌI OTA
                             const SizedBox(height: 20),
                             const SizedBox(
@@ -1310,7 +1500,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.backgroundColor.withOpacity(0.8),
+                                color: AppTheme.backgroundColor.withOpacity(
+                                  0.8,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: AppTheme.accentColor.withOpacity(0.5),
@@ -1327,11 +1519,15 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                                   color: AppTheme.accentColor,
                                   shadows: [
                                     Shadow(
-                                      color: AppTheme.accentColor.withOpacity(0.8),
+                                      color: AppTheme.accentColor.withOpacity(
+                                        0.8,
+                                      ),
                                       blurRadius: 18,
                                     ),
                                     Shadow(
-                                      color: AppTheme.primaryColor.withOpacity(0.6),
+                                      color: AppTheme.primaryColor.withOpacity(
+                                        0.6,
+                                      ),
                                       blurRadius: 36,
                                     ),
                                   ],
@@ -1342,7 +1538,9 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppTheme.backgroundColor.withOpacity(0.5),
+                                color: AppTheme.backgroundColor.withOpacity(
+                                  0.5,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Text(
@@ -1362,31 +1560,75 @@ class _VoiceCallScreenState extends State<VoiceCallScreen>
                               children: [
                                 OutlinedButton.icon(
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: _activationCode!));
+                                    Clipboard.setData(
+                                      ClipboardData(text: _activationCode!),
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Đã sao chép mã: $_activationCode')),
+                                      SnackBar(
+                                        content: Text(
+                                          'Đã sao chép mã: $_activationCode',
+                                        ),
+                                      ),
                                     );
                                   },
-                                  icon: const Icon(Icons.copy, size: 14, color: AppTheme.accentColor),
-                                  label: const Text('Sao chép mã', style: TextStyle(color: AppTheme.accentColor, fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.copy,
+                                    size: 14,
+                                    color: AppTheme.accentColor,
+                                  ),
+                                  label: const Text(
+                                    'Sao chép mã',
+                                    style: TextStyle(
+                                      color: AppTheme.accentColor,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppTheme.accentColor),
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    side: const BorderSide(
+                                      color: AppTheme.accentColor,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 OutlinedButton.icon(
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: _currentConfig.macAddress));
+                                    Clipboard.setData(
+                                      ClipboardData(
+                                        text: _currentConfig.macAddress,
+                                      ),
+                                    );
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Đã sao chép MAC: ${_currentConfig.macAddress}')),
+                                      SnackBar(
+                                        content: Text(
+                                          'Đã sao chép MAC: ${_currentConfig.macAddress}',
+                                        ),
+                                      ),
                                     );
                                   },
-                                  icon: const Icon(Icons.copy, size: 14, color: AppTheme.primaryColor),
-                                  label: Text('MAC: ${_currentConfig.macAddress}', style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.copy,
+                                    size: 14,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  label: Text(
+                                    'MAC: ${_currentConfig.macAddress}',
+                                    style: const TextStyle(
+                                      color: AppTheme.primaryColor,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                   style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: AppTheme.primaryColor),
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    side: const BorderSide(
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                   ),
                                 ),
                               ],

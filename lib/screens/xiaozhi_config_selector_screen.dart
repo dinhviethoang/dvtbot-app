@@ -44,8 +44,10 @@ class XiaozhiConfigSelectorScreen extends StatelessWidget {
               side: const BorderSide(color: AppTheme.borderColor),
             ),
             child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
               title: Text(
                 config.name,
                 style: const TextStyle(
@@ -67,7 +69,11 @@ class XiaozhiConfigSelectorScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.primaryColor),
+              trailing: const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppTheme.primaryColor,
+              ),
               onTap: () => _createXiaozhiConversation(context, config),
             ),
           );
@@ -77,10 +83,13 @@ class XiaozhiConfigSelectorScreen extends StatelessWidget {
   }
 
   void _createXiaozhiConversation(
-      BuildContext context, XiaozhiConfig config) async {
-    final conversation =
-        await Provider.of<ConversationProvider>(context, listen: false)
-            .createConversation(
+    BuildContext context,
+    XiaozhiConfig config,
+  ) async {
+    final conversation = await Provider.of<ConversationProvider>(
+      context,
+      listen: false,
+    ).createConversation(
       title: 'Trò chuyện với ${config.name}',
       type: ConversationType.xiaozhi,
       configId: config.id,

@@ -114,7 +114,9 @@ class DiscoveryScreen extends StatelessWidget {
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Tính năng trợ lý giọng nói đang được phát triển...'),
+                content: Text(
+                  'Tính năng trợ lý giọng nói đang được phát triển...',
+                ),
                 duration: Duration(seconds: 2),
               ),
             );
@@ -129,7 +131,9 @@ class DiscoveryScreen extends StatelessWidget {
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Tính năng phân tích tài liệu đang được phát triển...'),
+                content: Text(
+                  'Tính năng phân tích tài liệu đang được phát triển...',
+                ),
                 duration: Duration(seconds: 2),
               ),
             );

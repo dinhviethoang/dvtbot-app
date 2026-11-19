@@ -83,12 +83,17 @@ class XiaozhiWebSocketManager {
   Future<void> connect(String url, String token) async {
     if (url.isEmpty) {
       _dispatchEvent(
-        XiaozhiEvent(type: XiaozhiEventType.error, data: "Địa chỉ WebSocket không được để trống"),
+        XiaozhiEvent(
+          type: XiaozhiEventType.error,
+          data: "Địa chỉ WebSocket không được để trống",
+        ),
       );
       return;
     }
 
-    if ((isConnected || _isReconnecting) && _serverUrl == url && _token == token) {
+    if ((isConnected || _isReconnecting) &&
+        _serverUrl == url &&
+        _token == token) {
       print('$TAG: Đang hoặc đã kết nối tới $url, bỏ qua connect trùng lặp');
       return;
     }
@@ -283,7 +288,8 @@ class XiaozhiWebSocketManager {
   /// 发送文本消息
   void sendMessage(String message) {
     if (_channel != null && isConnected) {
-      final preview = message.length > 200 ? '${message.substring(0, 200)}...' : message;
+      final preview =
+          message.length > 200 ? '${message.substring(0, 200)}...' : message;
       AppLog.add('[Lenh] $preview');
       _channel!.sink.add(message);
     } else {
@@ -343,7 +349,8 @@ class XiaozhiWebSocketManager {
 
     if (message is String) {
       // 文本消息
-      final preview = message.length > 200 ? '${message.substring(0, 200)}...' : message;
+      final preview =
+          message.length > 200 ? '${message.substring(0, 200)}...' : message;
       AppLog.add('[Server] $preview');
       print('$TAG: 收到消息: $message');
       _dispatchEvent(
@@ -360,7 +367,9 @@ class XiaozhiWebSocketManager {
   /// 处理断开连接事件
   void _onDisconnected() {
     print('$TAG: 连接已断开');
-    AppLog.add('[KetNoi] WebSocket bi ngat ket noi (manualClose=$_manualClose)');
+    AppLog.add(
+      '[KetNoi] WebSocket bi ngat ket noi (manualClose=$_manualClose)',
+    );
     _dispatchEvent(
       XiaozhiEvent(type: XiaozhiEventType.disconnected, data: null),
     );
@@ -378,18 +387,18 @@ class XiaozhiWebSocketManager {
       print('[KetNoi] mat ket noi, hen ket noi lai sau ${delay}s');
       AppLog.add('[KetNoi] Mat ket noi, hen ket noi lai sau ${delay}s');
 
-      _reconnectDelaySeconds = (_reconnectDelaySeconds * 2).clamp(_minReconnectDelay, _maxReconnectDelay);
+      _reconnectDelaySeconds = (_reconnectDelaySeconds * 2).clamp(
+        _minReconnectDelay,
+        _maxReconnectDelay,
+      );
 
       _reconnectTimer?.cancel();
-      _reconnectTimer = Timer(
-        Duration(seconds: delay),
-        () {
-          _isReconnecting = false;
-          if (!_manualClose && _serverUrl != null && _token != null) {
-            connect(_serverUrl!, _token!);
-          }
-        },
-      );
+      _reconnectTimer = Timer(Duration(seconds: delay), () {
+        _isReconnecting = false;
+        if (!_manualClose && _serverUrl != null && _token != null) {
+          connect(_serverUrl!, _token!);
+        }
+      });
     }
   }
 

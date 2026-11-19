@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ai_assistant/utils/app_log.dart';
 
-/// Màn hình xem nhật ký hệ thống HDVbot
+/// Màn hình xem nhật ký hệ thống botAi
 class LogScreen extends StatefulWidget {
   const LogScreen({super.key});
 
@@ -56,7 +56,11 @@ class _LogScreenState extends State<LogScreen> {
         ),
         actions: [
           TextButton.icon(
-            icon: const Icon(Icons.copy_rounded, color: Color(0xFF00F0FF), size: 16),
+            icon: const Icon(
+              Icons.copy_rounded,
+              color: Color(0xFF00F0FF),
+              size: 16,
+            ),
             label: const Text(
               'Sao chép',
               style: TextStyle(color: Color(0xFF00F0FF), fontSize: 13),
@@ -74,7 +78,11 @@ class _LogScreenState extends State<LogScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Colors.redAccent,
+              size: 20,
+            ),
             tooltip: 'Xóa',
             onPressed: () {
               AppLog.clear();
@@ -104,7 +112,9 @@ class _LogScreenState extends State<LogScreen> {
               itemBuilder: (context, index) {
                 final line = logs[index];
                 Color textColor = const Color(0xFFD1D5DB);
-                if (line.contains('[Loi]') || line.contains('ERROR') || line.contains('fail')) {
+                if (line.contains('[Loi]') ||
+                    line.contains('ERROR') ||
+                    line.contains('fail')) {
                   textColor = const Color(0xFFFF6B6B);
                 } else if (line.contains('[KetNoi]')) {
                   textColor = const Color(0xFF4ADE80);

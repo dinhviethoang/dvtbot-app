@@ -54,7 +54,9 @@ class XiaozhiService {
   String? _sessionId; // 会话ID将由服务器提供
 
   /// Thông báo cảm xúc hiện tại từ máy chủ Xiaozhi
-  final ValueNotifier<String> emotionNotifier = ValueNotifier<String>('neutral');
+  final ValueNotifier<String> emotionNotifier = ValueNotifier<String>(
+    'neutral',
+  );
 
   XiaozhiWebSocketManager? _webSocketManager;
   bool _isConnected = false;
@@ -77,7 +79,9 @@ class XiaozhiService {
   }
 
   /// Chờ nhận tin nhắn 'hello' từ server và lấy session_id mới (tối đa timeout)
-  Future<String?> waitForHello({Duration timeout = const Duration(seconds: 8)}) async {
+  Future<String?> waitForHello({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
     if (isConnected && _sessionId != null) {
       return _sessionId;
     }
@@ -85,7 +89,8 @@ class XiaozhiService {
     final completer = Completer<String?>();
     void helloListener(dynamic message) {
       if (message is Map<String, dynamic>) {
-        if (message['type'] == 'hello' || (message.containsKey('session_id') && _sessionId != null)) {
+        if (message['type'] == 'hello' ||
+            (message.containsKey('session_id') && _sessionId != null)) {
           if (!completer.isCompleted) {
             completer.complete(_sessionId);
           }
@@ -323,7 +328,10 @@ class XiaozhiService {
     } catch (e) {
       print('$TAG: 连接失败: $e');
       _dispatchEvent(
-        XiaozhiServiceEvent(XiaozhiServiceEventType.error, 'Kết nối đến dịch vụ Xiaozhi thất bại: $e'),
+        XiaozhiServiceEvent(
+          XiaozhiServiceEventType.error,
+          'Kết nối đến dịch vụ Xiaozhi thất bại: $e',
+        ),
       );
     }
   }
@@ -438,7 +446,10 @@ class XiaozhiService {
         if (status != PermissionStatus.granted) {
           print('$TAG: 麦克风权限被拒绝');
           _dispatchEvent(
-            XiaozhiServiceEvent(XiaozhiServiceEventType.error, 'Quyền truy cập microphone bị từ chối'),
+            XiaozhiServiceEvent(
+              XiaozhiServiceEventType.error,
+              'Quyền truy cập microphone bị từ chối',
+            ),
           );
           return;
         }
@@ -453,7 +464,9 @@ class XiaozhiService {
           _webSocketManager!.isConnected &&
           _webSocketManager!.serverUrl == websocketUrl &&
           _webSocketManager!.token == token) {
-        print('$TAG: WebSocketManager đã kết nối đúng server, dùng lại kết nối hiện tại');
+        print(
+          '$TAG: WebSocketManager đã kết nối đúng server, dùng lại kết nối hiện tại',
+        );
         _isConnected = true;
         return;
       }
@@ -598,7 +611,10 @@ class XiaozhiService {
         if (status.isDenied) {
           print('$TAG: 麦克风权限被拒绝');
           _dispatchEvent(
-            XiaozhiServiceEvent(XiaozhiServiceEventType.error, 'Quyền truy cập microphone bị từ chối'),
+            XiaozhiServiceEvent(
+              XiaozhiServiceEventType.error,
+              'Quyền truy cập microphone bị từ chối',
+            ),
           );
           return;
         }
@@ -744,8 +760,8 @@ class XiaozhiService {
         _isConnected = false;
         _hasStartedCall = false;
         _audioDrainTimer?.cancel();
-      _audioDrainTimer = null;
-      _pauseAudioSending = false;
+        _audioDrainTimer = null;
+        _pauseAudioSending = false;
         _dispatchEvent(
           XiaozhiServiceEvent(XiaozhiServiceEventType.disconnected, null),
         );
@@ -838,13 +854,18 @@ class XiaozhiService {
           if (state == 'start' || state == 'sentence_start') {
             _audioDrainTimer?.cancel();
             _pauseAudioSending = true;
-            print('[Nghe] Half-duplex: Tạm dừng gửi micro khi robot phát âm thanh');
+            print(
+              '[Nghe] Half-duplex: Tạm dừng gửi micro khi robot phát âm thanh',
+            );
             AssistantActionExecutor.updateFloatingAvatarState('speaking');
             if (state == 'sentence_start' && text.isNotEmpty) {
               final cleaned = AssistantActionExecutor.interceptAndExecute(text);
               print('$TAG: 收到TTS句子: $cleaned');
               _dispatchEvent(
-                XiaozhiServiceEvent(XiaozhiServiceEventType.textMessage, cleaned),
+                XiaozhiServiceEvent(
+                  XiaozhiServiceEventType.textMessage,
+                  cleaned,
+                ),
               );
             }
           } else if (state == 'stop') {
@@ -852,8 +873,8 @@ class XiaozhiService {
             _audioDrainTimer?.cancel();
             _audioDrainTimer = Timer(const Duration(milliseconds: 600), () {
               _audioDrainTimer?.cancel();
-      _audioDrainTimer = null;
-      _pauseAudioSending = false;
+              _audioDrainTimer = null;
+              _pauseAudioSending = false;
               print('[Nghe] Xả buffer loa xong, mở lại micro gửi WebSocket');
               AssistantActionExecutor.updateFloatingAvatarState('idle');
               if (_isVoiceCallActive) {

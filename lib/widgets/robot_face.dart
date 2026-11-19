@@ -1,4 +1,4 @@
-/// RobotFace - Giao diện khuôn mặt robot AI HDVbot cho Samsung J2 Pro
+/// RobotFace - Giao diện khuôn mặt robot AI botAi cho Samsung J2 Pro
 /// Thiết kế Mecha Cyberpunk cơ khí tự thiết kế (2 mắt lớn + 1 miệng trên nền đen #000000).
 /// Tối ưu cho màn hình nằm ngang (landscape 960x540) và máy yếu (RAM 1.5GB):
 /// - Sử dụng 1 AnimationController lặp duy nhất, bọc RepaintBoundary
@@ -10,14 +10,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Các trạng thái hoạt động của robot
-enum FaceState {
-  idle,
-  connecting,
-  listening,
-  thinking,
-  speaking,
-  error,
-}
+enum FaceState { idle, connecting, listening, thinking, speaking, error }
 
 /// Các biểu cảm cảm xúc của robot
 enum FaceEmotion {
@@ -119,7 +112,11 @@ class _RobotFaceState extends State<RobotFace>
       duration: const Duration(seconds: 10),
     )..repeat();
 
-    _toSnapshot = _buildTargetParams(widget.emotion, widget.state, widget.color);
+    _toSnapshot = _buildTargetParams(
+      widget.emotion,
+      widget.state,
+      widget.color,
+    );
     _fromSnapshot = _toSnapshot;
     _transitionStartTime = DateTime.now();
 
@@ -133,7 +130,11 @@ class _RobotFaceState extends State<RobotFace>
         oldWidget.state != widget.state ||
         oldWidget.color != widget.color) {
       _fromSnapshot = _getCurrentInterpolatedParams();
-      _toSnapshot = _buildTargetParams(widget.emotion, widget.state, widget.color);
+      _toSnapshot = _buildTargetParams(
+        widget.emotion,
+        widget.state,
+        widget.color,
+      );
       _transitionStartTime = DateTime.now();
     }
   }
@@ -145,8 +146,12 @@ class _RobotFaceState extends State<RobotFace>
   }
 
   _FaceParams _getCurrentInterpolatedParams() {
-    final elapsed = DateTime.now().difference(_transitionStartTime).inMilliseconds;
-    final double t = (elapsed / _transitionDuration.inMilliseconds).clamp(0.0, 1.0);
+    final elapsed =
+        DateTime.now().difference(_transitionStartTime).inMilliseconds;
+    final double t = (elapsed / _transitionDuration.inMilliseconds).clamp(
+      0.0,
+      1.0,
+    );
     final double curveT = Curves.easeInOutCubic.transform(t);
     return _FaceParams.lerp(_fromSnapshot, _toSnapshot, curveT);
   }
@@ -172,7 +177,8 @@ class _RobotFaceState extends State<RobotFace>
 
             if (widget.state == FaceState.idle) {
               final diff = nowSec - _lastBlinkTime;
-              if (diff >= _nextBlinkInterval && diff < _nextBlinkInterval + 0.16) {
+              if (diff >= _nextBlinkInterval &&
+                  diff < _nextBlinkInterval + 0.16) {
                 final bt = (diff - _nextBlinkInterval) / 0.16;
                 blinkFactor = math.sin(bt * math.pi);
               } else if (diff >= _nextBlinkInterval + 0.16) {
@@ -181,7 +187,8 @@ class _RobotFaceState extends State<RobotFace>
               }
 
               // Đảo mắt nhẹ nhàng
-              idleGazeX = math.sin(nowSec * 0.75) * 0.14 +
+              idleGazeX =
+                  math.sin(nowSec * 0.75) * 0.14 +
                   math.sin(nowSec * 0.28) * 0.08;
               idleGazeY = math.cos(nowSec * 0.42) * 0.06;
             }
@@ -196,10 +203,7 @@ class _RobotFaceState extends State<RobotFace>
               idleGazeY: idleGazeY,
             );
 
-            return CustomPaint(
-              painter: _painter,
-              size: Size.infinite,
-            );
+            return CustomPaint(painter: _painter, size: Size.infinite);
           },
         ),
       ),
@@ -211,14 +215,15 @@ class _RobotFaceState extends State<RobotFace>
     FaceState state,
     Color baseColor,
   ) {
-    Color activeColor = (state == FaceState.error)
-        ? const Color(0xFFFF1744)
-        : baseColor;
+    Color activeColor =
+        (state == FaceState.error) ? const Color(0xFFFF1744) : baseColor;
 
     // Tăng độ tương phản nhận diện cảm xúc từ xa 2 mét
     if (state != FaceState.error) {
       if (emotion == FaceEmotion.angry) {
-        activeColor = const Color(0xFFFF6B35); // Cam đỏ nhẹ đặc trưng giận dữ thay vì cyan
+        activeColor = const Color(
+          0xFFFF6B35,
+        ); // Cam đỏ nhẹ đặc trưng giận dữ thay vì cyan
       } else if (emotion == FaceEmotion.sad) {
         activeColor = const Color(0xFF64B5F6); // Xanh nhạt đượm buồn
       }
@@ -559,7 +564,8 @@ class _RobotFacePainter extends CustomPainter {
       effectiveGlow *= flicker;
     }
 
-    final Color coreColor = Color.lerp(mainColor, Colors.white, 0.78) ?? Colors.white;
+    final Color coreColor =
+        Color.lerp(mainColor, Colors.white, 0.78) ?? Colors.white;
 
     // VẼ MẮT TRÁI
     _drawEye(
@@ -635,9 +641,11 @@ class _RobotFacePainter extends CustomPainter {
     final double eyeXShape = _params.eyeXShape;
     final double rightWink = (!isLeftEye) ? _params.rightEyeWink : 0.0;
 
-    final double standardEyeAlpha =
-        ((1.0 - eyeArch) * (1.0 - eyeHeart) * (1.0 - eyeXShape) * (1.0 - rightWink))
-            .clamp(0.0, 1.0);
+    final double standardEyeAlpha = ((1.0 - eyeArch) *
+            (1.0 - eyeHeart) *
+            (1.0 - eyeXShape) *
+            (1.0 - rightWink))
+        .clamp(0.0, 1.0);
 
     // 1. Mắt chuẩn: Khối Mecha vát góc ngoài + mống mắt phát sáng
     if (standardEyeAlpha > 0.01) {
@@ -726,11 +734,20 @@ class _RobotFacePainter extends CustomPainter {
       // Vát góc ngoài trên bên trái
       _path.moveTo(-hw + chamfer, -hh);
       _path.lineTo(hw - radius, -hh);
-      _path.arcToPoint(Offset(hw, -hh + radius), radius: Radius.circular(radius));
+      _path.arcToPoint(
+        Offset(hw, -hh + radius),
+        radius: Radius.circular(radius),
+      );
       _path.lineTo(hw, hh - radius);
-      _path.arcToPoint(Offset(hw - radius, hh), radius: Radius.circular(radius));
+      _path.arcToPoint(
+        Offset(hw - radius, hh),
+        radius: Radius.circular(radius),
+      );
       _path.lineTo(-hw + radius, hh);
-      _path.arcToPoint(Offset(-hw, hh - radius), radius: Radius.circular(radius));
+      _path.arcToPoint(
+        Offset(-hw, hh - radius),
+        radius: Radius.circular(radius),
+      );
       _path.lineTo(-hw, -hh + chamfer);
       _path.lineTo(-hw + chamfer, -hh);
       _path.close();
@@ -740,11 +757,20 @@ class _RobotFacePainter extends CustomPainter {
       _path.lineTo(hw - chamfer, -hh);
       _path.lineTo(hw, -hh + chamfer);
       _path.lineTo(hw, hh - radius);
-      _path.arcToPoint(Offset(hw - radius, hh), radius: Radius.circular(radius));
+      _path.arcToPoint(
+        Offset(hw - radius, hh),
+        radius: Radius.circular(radius),
+      );
       _path.lineTo(-hw + radius, hh);
-      _path.arcToPoint(Offset(-hw, hh - radius), radius: Radius.circular(radius));
+      _path.arcToPoint(
+        Offset(-hw, hh - radius),
+        radius: Radius.circular(radius),
+      );
       _path.lineTo(-hw, -hh + radius);
-      _path.arcToPoint(Offset(-hw + radius, -hh), radius: Radius.circular(radius));
+      _path.arcToPoint(
+        Offset(-hw + radius, -hh),
+        radius: Radius.circular(radius),
+      );
       _path.close();
     }
 
@@ -802,7 +828,11 @@ class _RobotFacePainter extends CustomPainter {
     _fillPaint.color = _withOpacity(coreColor, 0.95 * alpha * glow);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset(ix, iy), width: iw * 0.52, height: ih * 0.52),
+        Rect.fromCenter(
+          center: Offset(ix, iy),
+          width: iw * 0.52,
+          height: ih * 0.52,
+        ),
         Radius.circular(iw * 0.18),
       ),
       _fillPaint,
@@ -973,8 +1003,16 @@ class _RobotFacePainter extends CustomPainter {
       ..strokeWidth = 16.0
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 3.5);
-    canvas.drawLine(Offset(-spanX, -spanY), Offset(spanX, spanY), _glowStrokePaint);
-    canvas.drawLine(Offset(-spanX, spanY), Offset(spanX, -spanY), _glowStrokePaint);
+    canvas.drawLine(
+      Offset(-spanX, -spanY),
+      Offset(spanX, spanY),
+      _glowStrokePaint,
+    );
+    canvas.drawLine(
+      Offset(-spanX, spanY),
+      Offset(spanX, -spanY),
+      _glowStrokePaint,
+    );
 
     _strokePaint
       ..color = _withOpacity(mainColor, 0.95 * alpha * glow)
@@ -988,8 +1026,16 @@ class _RobotFacePainter extends CustomPainter {
       ..color = _withOpacity(coreColor, 0.95 * alpha * glow)
       ..strokeWidth = 3.8
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(-spanX, -spanY), Offset(spanX, spanY), _coreStrokePaint);
-    canvas.drawLine(Offset(-spanX, spanY), Offset(spanX, -spanY), _coreStrokePaint);
+    canvas.drawLine(
+      Offset(-spanX, -spanY),
+      Offset(spanX, spanY),
+      _coreStrokePaint,
+    );
+    canvas.drawLine(
+      Offset(-spanX, spanY),
+      Offset(spanX, -spanY),
+      _coreStrokePaint,
+    );
   }
 
   void _drawWinkEye({
@@ -1067,25 +1113,37 @@ class _RobotFacePainter extends CustomPainter {
       _fillPaint
         ..color = _withOpacity(mainColor, 0.18 * glow)
         ..maskFilter = null;
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2), _fillPaint);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
+        _fillPaint,
+      );
 
       _glowStrokePaint
         ..color = _withOpacity(mainColor, 0.35 * glow)
         ..strokeWidth = 6.0
         ..strokeCap = StrokeCap.round
         ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 2.5);
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2), _glowStrokePaint);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
+        _glowStrokePaint,
+      );
 
       _strokePaint
         ..color = _withOpacity(mainColor, 0.95 * glow)
         ..strokeWidth = 3.8
         ..maskFilter = null;
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2), _strokePaint);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
+        _strokePaint,
+      );
 
       _coreStrokePaint
         ..color = _withOpacity(coreColor, 0.85 * glow)
         ..strokeWidth = 1.8;
-      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2), _coreStrokePaint);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
+        _coreStrokePaint,
+      );
 
       canvas.restore();
       return;

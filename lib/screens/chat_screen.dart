@@ -94,7 +94,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       _initXiaozhiService();
 
-      _connectionCheckTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      _connectionCheckTimer = Timer.periodic(const Duration(seconds: 2), (
+        timer,
+      ) {
         if (mounted && _xiaozhiService != null) {
           final wasConnected = _xiaozhiService!.isConnected;
           setState(() {});
@@ -155,16 +157,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _currentConfig = configProvider.xiaozhiConfigs.firstWhere(
       (config) => config.id == configId,
-      orElse: () => configProvider.xiaozhiConfigs.isNotEmpty
-          ? configProvider.xiaozhiConfigs.first
-          : XiaozhiConfig(
-              id: 'default_hdvbot',
-              name: 'HDVbot',
-              otaUrl: XiaozhiConfig.defaultOtaUrl,
-              websocketUrl: '',
-              macAddress: '',
-              token: 'test-token',
-            ),
+      orElse:
+          () =>
+              configProvider.xiaozhiConfigs.isNotEmpty
+                  ? configProvider.xiaozhiConfigs.first
+                  : XiaozhiConfig(
+                    id: 'default_botai',
+                    name: 'botAi',
+                    otaUrl: XiaozhiConfig.defaultOtaUrl,
+                    websocketUrl: '',
+                    macAddress: '',
+                    token: 'test-token',
+                  ),
     );
 
     await _startOtaActivation();
@@ -176,9 +180,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final cancelToken = OtaCancellationToken();
     _otaCancelToken = cancelToken;
 
-    final mac = DeviceUtil.isValidMac(_currentConfig.macAddress)
-        ? _currentConfig.macAddress
-        : await DeviceUtil.getDeviceMac();
+    final mac =
+        DeviceUtil.isValidMac(_currentConfig.macAddress)
+            ? _currentConfig.macAddress
+            : await DeviceUtil.getDeviceMac();
     final clientId = await DeviceUtil.getClientId();
 
     if (_currentConfig.macAddress != mac) {
@@ -412,7 +417,11 @@ class _ChatScreenState extends State<ChatScreen> {
           statusBarBrightness: Brightness.dark,
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 26),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppTheme.primaryColor,
+            size: 26,
+          ),
           onPressed: () {
             if (_xiaozhiService != null) {
               _xiaozhiService!.stopPlayback();
@@ -450,7 +459,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceColor,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.primaryColor.withOpacity(0.4)),
+                      border: Border.all(
+                        color: AppTheme.primaryColor.withOpacity(0.4),
+                      ),
                     ),
                     child: const Text(
                       'Thoại Xiaozhi',
@@ -489,9 +500,15 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.primaryColor.withOpacity(0.4)),
+                      border: Border.all(
+                        color: AppTheme.primaryColor.withOpacity(0.4),
+                      ),
                     ),
-                    child: const Icon(Icons.phone, color: AppTheme.primaryColor, size: 18),
+                    child: const Icon(
+                      Icons.phone,
+                      color: AppTheme.primaryColor,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
@@ -604,29 +621,53 @@ class _ChatScreenState extends State<ChatScreen> {
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: _activationCode!));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã sao chép mã: $_activationCode')),
+                      SnackBar(
+                        content: Text('Đã sao chép mã: $_activationCode'),
+                      ),
                     );
                   },
-                  icon: const Icon(Icons.copy, size: 14, color: Color(0xFF00F0FF)),
-                  label: const Text('Sao chép mã', style: TextStyle(color: Color(0xFF00F0FF), fontSize: 12)),
+                  icon: const Icon(
+                    Icons.copy,
+                    size: 14,
+                    color: Color(0xFF00F0FF),
+                  ),
+                  label: const Text(
+                    'Sao chép mã',
+                    style: TextStyle(color: Color(0xFF00F0FF), fontSize: 12),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFF00F0FF)),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _currentConfig.macAddress));
+                    Clipboard.setData(
+                      ClipboardData(text: _currentConfig.macAddress),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã sao chép MAC: ${_currentConfig.macAddress}')),
+                      SnackBar(
+                        content: Text(
+                          'Đã sao chép MAC: ${_currentConfig.macAddress}',
+                        ),
+                      ),
                     );
                   },
                   icon: const Icon(Icons.copy, size: 14, color: Colors.white),
-                  label: Text('MAC: ${_currentConfig.macAddress}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  label: Text(
+                    'MAC: ${_currentConfig.macAddress}',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Colors.white70),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                   ),
                 ),
               ],
@@ -670,13 +711,14 @@ class _ChatScreenState extends State<ChatScreen> {
     final configProvider = Provider.of<ConfigProvider>(context);
     final xiaozhiConfig = configProvider.xiaozhiConfigs.firstWhere(
       (config) => config.id == widget.conversation.configId,
-      orElse: () => XiaozhiConfig(
-        id: '',
-        name: 'HDVbot',
-        websocketUrl: '',
-        macAddress: '',
-        token: '',
-      ),
+      orElse:
+          () => XiaozhiConfig(
+            id: '',
+            name: 'botAi',
+            websocketUrl: '',
+            macAddress: '',
+            token: '',
+          ),
     );
 
     final bool isConnected = _xiaozhiService?.isConnected ?? false;
@@ -707,7 +749,8 @@ class _ChatScreenState extends State<ChatScreen> {
               color: isConnected ? Colors.green : AppTheme.errorColor,
               boxShadow: [
                 BoxShadow(
-                  color: (isConnected ? Colors.green : AppTheme.errorColor).withOpacity(0.4),
+                  color: (isConnected ? Colors.green : AppTheme.errorColor)
+                      .withOpacity(0.4),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
@@ -785,7 +828,10 @@ class _ChatScreenState extends State<ChatScreen> {
           return const Center(
             child: Text(
               'Bắt đầu cuộc trò chuyện',
-              style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 16),
+              style: TextStyle(
+                color: AppTheme.secondaryTextColor,
+                fontSize: 16,
+              ),
             ),
           );
         }
@@ -1001,18 +1047,20 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Container(
                 height: 54,
                 decoration: BoxDecoration(
-                  color: _isRecording
-                      ? _isCancelling
-                          ? AppTheme.errorColor.withOpacity(0.2)
-                          : AppTheme.primaryColor.withOpacity(0.2)
-                      : AppTheme.backgroundColor,
+                  color:
+                      _isRecording
+                          ? _isCancelling
+                              ? AppTheme.errorColor.withOpacity(0.2)
+                              : AppTheme.primaryColor.withOpacity(0.2)
+                          : AppTheme.backgroundColor,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: _isRecording
-                        ? _isCancelling
-                            ? AppTheme.errorColor
-                            : AppTheme.primaryColor
-                        : AppTheme.borderColor,
+                    color:
+                        _isRecording
+                            ? _isCancelling
+                                ? AppTheme.errorColor
+                                : AppTheme.primaryColor
+                            : AppTheme.borderColor,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -1036,15 +1084,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                 : "Thả để gửi, trượt lên để hủy"
                             : "Nhấn giữ để nói",
                         style: TextStyle(
-                          color: _isRecording
-                              ? _isCancelling
-                                  ? AppTheme.errorColor
-                                  : AppTheme.primaryColor
-                              : AppTheme.textColor,
+                          color:
+                              _isRecording
+                                  ? _isCancelling
+                                      ? AppTheme.errorColor
+                                      : AppTheme.primaryColor
+                                  : AppTheme.textColor,
                           fontSize: 16,
-                          fontWeight: _isRecording
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight:
+                              _isRecording
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -1104,7 +1154,10 @@ class _ChatScreenState extends State<ChatScreen> {
       key: const ValueKey('send_button'),
       icon: Icon(
         Icons.send_rounded,
-        color: hasText ? AppTheme.primaryColor : AppTheme.secondaryTextColor.withOpacity(0.4),
+        color:
+            hasText
+                ? AppTheme.primaryColor
+                : AppTheme.secondaryTextColor.withOpacity(0.4),
         size: 24,
       ),
       onPressed: hasText ? _sendMessage : null,
@@ -1251,7 +1304,9 @@ class _ChatScreenState extends State<ChatScreen> {
       } else if (!_xiaozhiService!.isConnected) {
         await _xiaozhiService!.connect();
         if (!_xiaozhiService!.isConnected) {
-          throw Exception("Không thể kết nối đến dịch vụ Xiaozhi, vui lòng kiểm tra mạng");
+          throw Exception(
+            "Không thể kết nối đến dịch vụ Xiaozhi, vui lòng kiểm tra mạng",
+          );
         }
         setState(() {});
       }
@@ -1292,16 +1347,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
     final xiaozhiConfig = configProvider.xiaozhiConfigs.firstWhere(
       (config) => config.id == widget.conversation.configId,
-      orElse: () => configProvider.xiaozhiConfigs.isNotEmpty
-          ? configProvider.xiaozhiConfigs.first
-          : XiaozhiConfig(
-              id: 'default_hdvbot',
-              name: 'HDVbot',
-              otaUrl: XiaozhiConfig.defaultOtaUrl,
-              websocketUrl: '',
-              macAddress: '',
-              token: 'test-token',
-            ),
+      orElse:
+          () =>
+              configProvider.xiaozhiConfigs.isNotEmpty
+                  ? configProvider.xiaozhiConfigs.first
+                  : XiaozhiConfig(
+                    id: 'default_botai',
+                    name: 'botAi',
+                    otaUrl: XiaozhiConfig.defaultOtaUrl,
+                    websocketUrl: '',
+                    macAddress: '',
+                    token: 'test-token',
+                  ),
     );
 
     if (_xiaozhiService != null) {
@@ -1311,10 +1368,11 @@ class _ChatScreenState extends State<ChatScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => VoiceCallScreen(
-          conversation: widget.conversation,
-          xiaozhiConfig: xiaozhiConfig,
-        ),
+        builder:
+            (context) => VoiceCallScreen(
+              conversation: widget.conversation,
+              xiaozhiConfig: xiaozhiConfig,
+            ),
       ),
     ).then((_) async {
       AppLog.add('[Chat] Quay ve tu VoiceCallScreen -> Khoi phuc che do chat');
@@ -1334,10 +1392,16 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!_xiaozhiService!.isConnected) {
         AppLog.add('[Chat] Service chua ket noi, dang ket noi lai...');
         await _xiaozhiService!.connect();
-        await _xiaozhiService!.waitForHello(timeout: const Duration(seconds: 8));
+        await _xiaozhiService!.waitForHello(
+          timeout: const Duration(seconds: 8),
+        );
       } else if (_xiaozhiService!.sessionId == null) {
-        AppLog.add('[Chat] Service da ket noi nhung chua co session_id, cho hello...');
-        await _xiaozhiService!.waitForHello(timeout: const Duration(seconds: 8));
+        AppLog.add(
+          '[Chat] Service da ket noi nhung chua co session_id, cho hello...',
+        );
+        await _xiaozhiService!.waitForHello(
+          timeout: const Duration(seconds: 8),
+        );
       }
 
       if (mounted) setState(() {});
@@ -1346,7 +1410,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startWaveAnimation() {
     _waveAnimationTimer?.cancel();
-    _waveAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    _waveAnimationTimer = Timer.periodic(const Duration(milliseconds: 100), (
+      timer,
+    ) {
       if (_isRecording && !_isCancelling) {
         setState(() {
           for (int i = 0; i < _waveHeights.length; i++) {

@@ -39,13 +39,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _autoLaunch() async {
     final configProvider = Provider.of<ConfigProvider>(context, listen: false);
-    final conversationProvider =
-        Provider.of<ConversationProvider>(context, listen: false);
+    final conversationProvider = Provider.of<ConversationProvider>(
+      context,
+      listen: false,
+    );
 
-    // Nếu chưa có cấu hình Xiaozhi nào thì tự tạo cấu hình mặc định (tên "HDVbot", otaUrl mặc định, websocketUrl rỗng)
+    // Nếu chưa có cấu hình Xiaozhi nào thì tự tạo cấu hình mặc định (tên "botAi", otaUrl mặc định, websocketUrl rỗng)
     if (configProvider.xiaozhiConfigs.isEmpty) {
       await configProvider.addXiaozhiConfig(
-        'HDVbot',
+        'botAi',
         '',
         otaUrl: XiaozhiConfig.defaultOtaUrl,
       );
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       conversation ??= await conversationProvider.createConversation(
-        title: xiaozhiConfig.name.isNotEmpty ? xiaozhiConfig.name : 'HDVbot',
+        title: xiaozhiConfig.name.isNotEmpty ? xiaozhiConfig.name : 'botAi',
         type: ConversationType.xiaozhi,
         configId: xiaozhiConfig.id,
       );
@@ -74,10 +76,11 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => VoiceCallScreen(
-              conversation: conversation!,
-              xiaozhiConfig: xiaozhiConfig,
-            ),
+            builder:
+                (context) => VoiceCallScreen(
+                  conversation: conversation!,
+                  xiaozhiConfig: xiaozhiConfig,
+                ),
           ),
         );
       }
@@ -101,109 +104,118 @@ class _HomeScreenState extends State<HomeScreen> {
         extendBody: true,
         extendBodyBehindAppBar: true,
         backgroundColor: AppTheme.backgroundColor,
-        appBar: _selectedIndex == 1
-            ? null
-            : AppBar(
-                title: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.asset(
-                        'assets/images/logo_king.png',
-                        width: 32,
-                        height: 32,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        appBar:
+            _selectedIndex == 1
+                ? null
+                : AppBar(
+                  title: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.asset(
+                          'assets/images/logo_king.png',
+                          width: 32,
+                          height: 32,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'HDVbot',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                        color: AppTheme.textColor,
+                      const SizedBox(width: 10),
+                      const Text(
+                        'botAi',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          color: AppTheme.textColor,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                backgroundColor: AppTheme.backgroundColor,
-                centerTitle: false,
-                titleSpacing: 20,
-                toolbarHeight: 65,
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      child: InkWell(
+                    ],
+                  ),
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
+                  backgroundColor: AppTheme.backgroundColor,
+                  centerTitle: false,
+                  titleSpacing: 20,
+                  toolbarHeight: 65,
+                  actions: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Material(
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
-                        splashColor: AppTheme.primaryColor.withOpacity(0.1),
-                        highlightColor: AppTheme.primaryColor.withOpacity(0.05),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SettingsScreen(),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          splashColor: AppTheme.primaryColor.withOpacity(0.1),
+                          highlightColor: AppTheme.primaryColor.withOpacity(
+                            0.05,
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SettingsScreen(),
+                              ),
+                            );
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Icon(
+                              Icons.settings,
+                              size: 26,
+                              color: AppTheme.primaryColor,
                             ),
-                          );
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: Icon(
-                            Icons.settings,
-                            size: 26,
-                            color: AppTheme.primaryColor,
                           ),
                         ),
                       ),
                     ),
+                  ],
+                ),
+        body:
+            _selectedIndex == 1
+                ? const SafeArea(bottom: false, child: DiscoveryScreen())
+                : SafeArea(
+                  bottom: false,
+                  child: Column(
+                    children: [
+                      _buildSearchBar(),
+                      Expanded(child: _buildBody()),
+                    ],
                   ),
-                ],
-              ),
-        body: _selectedIndex == 1
-            ? const SafeArea(bottom: false, child: DiscoveryScreen())
-            : SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    _buildSearchBar(),
-                    Expanded(child: _buildBody()),
-                  ],
                 ),
-              ),
-        floatingActionButton: _selectedIndex == 0
-            ? Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: FloatingActionButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ConversationTypeScreen(),
+        floatingActionButton:
+            _selectedIndex == 0
+                ? Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
                       ),
-                    );
-                  },
-                  backgroundColor: AppTheme.primaryColor,
-                  elevation: 0,
-                  shape: const CircleBorder(),
-                  child: const Icon(Icons.add, size: 30, color: Color(0xFF070B12)),
-                ),
-              )
-            : null,
+                    ],
+                  ),
+                  child: FloatingActionButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ConversationTypeScreen(),
+                        ),
+                      );
+                    },
+                    backgroundColor: AppTheme.primaryColor,
+                    elevation: 0,
+                    shape: const CircleBorder(),
+                    child: const Icon(
+                      Icons.add,
+                      size: 30,
+                      color: Color(0xFF070B12),
+                    ),
+                  ),
+                )
+                : null,
         bottomNavigationBar: ClipRRect(
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
@@ -258,13 +270,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: _selectedIndex == 0
-                              ? AppTheme.primaryColor.withOpacity(0.15)
-                              : Colors.transparent,
+                          color:
+                              _selectedIndex == 0
+                                  ? AppTheme.primaryColor.withOpacity(0.15)
+                                  : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
-                          border: _selectedIndex == 0
-                              ? Border.all(color: AppTheme.primaryColor.withOpacity(0.4))
-                              : null,
+                          border:
+                              _selectedIndex == 0
+                                  ? Border.all(
+                                    color: AppTheme.primaryColor.withOpacity(
+                                      0.4,
+                                    ),
+                                  )
+                                  : null,
                         ),
                         child: Icon(
                           _selectedIndex == 0
@@ -281,13 +299,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: _selectedIndex == 1
-                              ? AppTheme.primaryColor.withOpacity(0.15)
-                              : Colors.transparent,
+                          color:
+                              _selectedIndex == 1
+                                  ? AppTheme.primaryColor.withOpacity(0.15)
+                                  : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
-                          border: _selectedIndex == 1
-                              ? Border.all(color: AppTheme.primaryColor.withOpacity(0.4))
-                              : null,
+                          border:
+                              _selectedIndex == 1
+                                  ? Border.all(
+                                    color: AppTheme.primaryColor.withOpacity(
+                                      0.4,
+                                    ),
+                                  )
+                                  : null,
                         ),
                         child: Icon(
                           _selectedIndex == 1
@@ -336,7 +360,10 @@ class _HomeScreenState extends State<HomeScreen> {
             style: const TextStyle(color: AppTheme.textColor, fontSize: 16),
             decoration: InputDecoration(
               hintText: 'Tìm kiếm cuộc hội thoại',
-              hintStyle: const TextStyle(color: AppTheme.secondaryTextColor, fontSize: 16),
+              hintStyle: const TextStyle(
+                color: AppTheme.secondaryTextColor,
+                fontSize: 16,
+              ),
               prefixIcon: Container(
                 padding: const EdgeInsets.all(12),
                 child: const Icon(
@@ -452,11 +479,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             width: 64,
                             height: 64,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.chat_bubble_outline,
-                              size: 48,
-                              color: AppTheme.secondaryTextColor,
-                            ),
+                            errorBuilder:
+                                (_, __, ___) => const Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 48,
+                                  color: AppTheme.secondaryTextColor,
+                                ),
                           ),
                         ),
                       ),
@@ -628,7 +656,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceColor,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                          border: Border.all(
+                            color: AppTheme.primaryColor.withOpacity(0.3),
+                          ),
                         ),
                         child: Icon(
                           conversation.isPinned
@@ -692,7 +722,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         decoration: BoxDecoration(
                           color: AppTheme.surfaceColor,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppTheme.errorColor.withOpacity(0.3)),
+                          border: Border.all(
+                            color: AppTheme.errorColor.withOpacity(0.3),
+                          ),
                         ),
                         child: const Icon(
                           Icons.delete,
@@ -727,7 +759,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(color: AppTheme.borderColor),
+                              side: const BorderSide(
+                                color: AppTheme.borderColor,
+                              ),
                             ),
                           ),
                         );

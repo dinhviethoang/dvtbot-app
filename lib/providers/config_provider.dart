@@ -40,8 +40,8 @@ class ConfigProvider extends ChangeNotifier {
     if (_xiaozhiConfigs.isEmpty) {
       _xiaozhiConfigs.add(
         XiaozhiConfig(
-          id: 'default_hdvbot',
-          name: 'HDVbot',
+          id: 'default_botai',
+          name: 'botAi',
           otaUrl: XiaozhiConfig.defaultOtaUrl,
           websocketUrl: '',
           macAddress: defaultMac,
@@ -50,6 +50,19 @@ class ConfigProvider extends ChangeNotifier {
       );
       needSave = true;
     } else {
+      // Nâng cấp tên mặc định cũ nếu có mà không ghi đè cấu hình cá nhân
+      for (int i = 0; i < _xiaozhiConfigs.length; i++) {
+        final config = _xiaozhiConfigs[i];
+        if (config.id == 'default_hdvbot' ||
+            (config.id == 'default_botai' &&
+                (config.name == 'HDVbot' || config.name == 'DVTbot'))) {
+          _xiaozhiConfigs[i] = config.copyWith(
+            id: 'default_botai',
+            name: 'botAi',
+          );
+          needSave = true;
+        }
+      }
       // Mọi cấu hình có macAddress không đúng định dạng MAC thì tự thay bằng MAC chuẩn
       for (int i = 0; i < _xiaozhiConfigs.length; i++) {
         final config = _xiaozhiConfigs[i];
@@ -107,9 +120,10 @@ class ConfigProvider extends ChangeNotifier {
     final newConfig = XiaozhiConfig(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
-      otaUrl: (otaUrl != null && otaUrl.isNotEmpty)
-          ? otaUrl
-          : XiaozhiConfig.defaultOtaUrl,
+      otaUrl:
+          (otaUrl != null && otaUrl.isNotEmpty)
+              ? otaUrl
+              : XiaozhiConfig.defaultOtaUrl,
       websocketUrl: websocketUrl,
       macAddress: macAddress,
       token: (token != null && token.isNotEmpty) ? token : 'test-token',

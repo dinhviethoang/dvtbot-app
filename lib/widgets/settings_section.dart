@@ -4,7 +4,7 @@ import 'package:ai_assistant/utils/app_theme.dart';
 class SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
-  
+
   const SettingsSection({
     super.key,
     required this.title,
@@ -34,12 +34,9 @@ class SettingsSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             side: const BorderSide(color: AppTheme.borderColor),
           ),
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
   }
 }
-

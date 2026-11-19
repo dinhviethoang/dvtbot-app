@@ -5,13 +5,16 @@ import '../utils/app_log.dart';
 /// Bộ thực thi lệnh hệ thống (System Assistant Action Engine)
 /// Điều khiển điện thoại Android như Google Assistant thông qua Intent & MethodChannel
 class AssistantActionExecutor {
-  static const MethodChannel _channel =
-      MethodChannel('com.lhht.ai_assistant/system_action');
+  static const MethodChannel _channel = MethodChannel(
+    'com.lhht.ai_assistant/system_action',
+  );
 
   static bool _flashlightState = false;
 
   /// 1. Chỉ đường / Tìm địa điểm trên Google Maps (OPEN_MAP)
-  static Future<Map<dynamic, dynamic>> openGoogleMaps(String destination) async {
+  static Future<Map<dynamic, dynamic>> openGoogleMaps(
+    String destination,
+  ) async {
     try {
       AppLog.add('[Action] Mở Google Maps: $destination');
       final result = await _channel.invokeMethod('openGoogleMaps', {
@@ -70,9 +73,7 @@ class AssistantActionExecutor {
   static Future<Map<dynamic, dynamic>> setVolume(int level) async {
     try {
       AppLog.add('[Action] Đặt âm lượng: $level%');
-      final result = await _channel.invokeMethod('setVolume', {
-        'level': level,
-      });
+      final result = await _channel.invokeMethod('setVolume', {'level': level});
       return result is Map ? result : {'success': true};
     } catch (e) {
       AppLog.add('[Lỗi] setVolume: $e');
@@ -83,9 +84,7 @@ class AssistantActionExecutor {
   static Future<Map<dynamic, dynamic>> adjustVolume(bool up) async {
     try {
       AppLog.add('[Action] ${up ? "Tăng" : "Giảm"} âm lượng');
-      final result = await _channel.invokeMethod('adjustVolume', {
-        'up': up,
-      });
+      final result = await _channel.invokeMethod('adjustVolume', {'up': up});
       return result is Map ? result : {'success': true};
     } catch (e) {
       AppLog.add('[Lỗi] adjustVolume: $e');
@@ -175,7 +174,9 @@ class AssistantActionExecutor {
   /// Cập nhật trạng thái biểu cảm cho bong bóng nhân vật ảo nổi
   static Future<void> updateFloatingAvatarState(String state) async {
     try {
-      await _channel.invokeMethod('updateFloatingAvatarState', {'state': state});
+      await _channel.invokeMethod('updateFloatingAvatarState', {
+        'state': state,
+      });
     } catch (_) {}
   }
 
@@ -192,11 +193,11 @@ class AssistantActionExecutor {
             "properties": {
               "location": {
                 "type": "string",
-                "description": "Tên địa điểm hoặc địa chỉ cần tìm/chỉ đường"
-              }
+                "description": "Tên địa điểm hoặc địa chỉ cần tìm/chỉ đường",
+              },
             },
-            "required": ["location"]
-          }
+            "required": ["location"],
+          },
         },
         {
           "name": "play_youtube",
@@ -206,11 +207,12 @@ class AssistantActionExecutor {
             "properties": {
               "query": {
                 "type": "string",
-                "description": "Tên bài hát, video hoặc từ khóa tìm kiếm trên YouTube"
-              }
+                "description":
+                    "Tên bài hát, video hoặc từ khóa tìm kiếm trên YouTube",
+              },
             },
-            "required": ["query"]
-          }
+            "required": ["query"],
+          },
         },
         {
           "name": "open_app",
@@ -220,11 +222,12 @@ class AssistantActionExecutor {
             "properties": {
               "app_name": {
                 "type": "string",
-                "description": "Tên ứng dụng muốn mở (ví dụ: Zalo, Chrome, Cài đặt, Camera, Facebook)"
-              }
+                "description":
+                    "Tên ứng dụng muốn mở (ví dụ: Zalo, Chrome, Cài đặt, Camera, Facebook)",
+              },
             },
-            "required": ["app_name"]
-          }
+            "required": ["app_name"],
+          },
         },
         {
           "name": "set_volume",
@@ -234,11 +237,11 @@ class AssistantActionExecutor {
             "properties": {
               "level": {
                 "type": "integer",
-                "description": "Mức âm lượng từ 0 đến 100"
-              }
+                "description": "Mức âm lượng từ 0 đến 100",
+              },
             },
-            "required": ["level"]
-          }
+            "required": ["level"],
+          },
         },
         {
           "name": "toggle_flashlight",
@@ -248,20 +251,21 @@ class AssistantActionExecutor {
             "properties": {
               "state": {
                 "type": "boolean",
-                "description": "true để bật đèn pin, false để tắt đèn pin"
-              }
+                "description": "true để bật đèn pin, false để tắt đèn pin",
+              },
             },
-            "required": ["state"]
-          }
-        }
-      ]
+            "required": ["state"],
+          },
+        },
+      ],
     };
   }
 
   /// Thực thi lệnh IoT chuẩn từ gói tin 'iot' của Xiaozhi Server (Lớp 1)
   static Future<void> handleIotPacket(Map<String, dynamic> jsonData) async {
     try {
-      dynamic commandsRaw = jsonData['commands'] ?? jsonData['command'] ?? jsonData['actions'];
+      dynamic commandsRaw =
+          jsonData['commands'] ?? jsonData['command'] ?? jsonData['actions'];
       List<dynamic> commandList = [];
       if (commandsRaw is List) {
         commandList = commandsRaw;
@@ -273,15 +277,21 @@ class AssistantActionExecutor {
 
       for (var cmd in commandList) {
         if (cmd is! Map) continue;
-        final name = (cmd['name'] ?? cmd['function'] ?? cmd['action'] ?? '').toString();
-        final params = cmd['parameters'] ?? cmd['arguments'] ?? cmd['params'] ?? {};
+        final name =
+            (cmd['name'] ?? cmd['function'] ?? cmd['action'] ?? '').toString();
+        final params =
+            cmd['parameters'] ?? cmd['arguments'] ?? cmd['params'] ?? {};
 
         Map<String, dynamic> paramMap = {};
         if (params is String) {
           try {
             paramMap = jsonDecode(params) as Map<String, dynamic>;
           } catch (_) {
-            paramMap = {'query': params, 'location': params, 'app_name': params};
+            paramMap = {
+              'query': params,
+              'location': params,
+              'app_name': params,
+            };
           }
         } else if (params is Map) {
           paramMap = Map<String, dynamic>.from(params);
@@ -290,7 +300,12 @@ class AssistantActionExecutor {
         switch (name) {
           case 'open_google_maps':
           case 'open_map':
-            final location = (paramMap['location'] ?? paramMap['destination'] ?? paramMap['query'] ?? '').toString();
+            final location =
+                (paramMap['location'] ??
+                        paramMap['destination'] ??
+                        paramMap['query'] ??
+                        '')
+                    .toString();
             if (location.isNotEmpty) {
               await openGoogleMaps(location);
             }
@@ -298,14 +313,24 @@ class AssistantActionExecutor {
 
           case 'play_youtube':
           case 'open_youtube':
-            final query = (paramMap['query'] ?? paramMap['keyword'] ?? paramMap['search'] ?? '').toString();
+            final query =
+                (paramMap['query'] ??
+                        paramMap['keyword'] ??
+                        paramMap['search'] ??
+                        '')
+                    .toString();
             if (query.isNotEmpty) {
               await openYouTube(query);
             }
             break;
 
           case 'open_app':
-            final appName = (paramMap['app_name'] ?? paramMap['appName'] ?? paramMap['name'] ?? '').toString();
+            final appName =
+                (paramMap['app_name'] ??
+                        paramMap['appName'] ??
+                        paramMap['name'] ??
+                        '')
+                    .toString();
             if (appName.isNotEmpty) {
               await openApp(appName);
             }
@@ -322,11 +347,17 @@ class AssistantActionExecutor {
             break;
 
           case 'toggle_flashlight':
-            final state = paramMap['state'] ?? paramMap['enabled'] ?? paramMap['on'];
+            final state =
+                paramMap['state'] ?? paramMap['enabled'] ?? paramMap['on'];
             if (state is bool) {
               await toggleFlashlight(state: state);
             } else if (state is String) {
-              await toggleFlashlight(state: state.toLowerCase() == 'true' || state == '1' || state == 'on');
+              await toggleFlashlight(
+                state:
+                    state.toLowerCase() == 'true' ||
+                    state == '1' ||
+                    state == 'on',
+              );
             } else {
               await toggleFlashlight();
             }
@@ -422,19 +453,28 @@ class AssistantActionExecutor {
     }
 
     // 4. Âm lượng: "tăng âm lượng", "giảm âm lượng", "chỉnh âm lượng 80"
-    final volUpNlp = RegExp(r'(?:tăng|vặn to)\s+âm lượng', caseSensitive: false);
+    final volUpNlp = RegExp(
+      r'(?:tăng|vặn to)\s+âm lượng',
+      caseSensitive: false,
+    );
     if (volUpNlp.hasMatch(textForMatching)) {
       adjustVolume(true);
       return cleanText.trim();
     }
 
-    final volDownNlp = RegExp(r'(?:giảm|vặn nhỏ)\s+âm lượng', caseSensitive: false);
+    final volDownNlp = RegExp(
+      r'(?:giảm|vặn nhỏ)\s+âm lượng',
+      caseSensitive: false,
+    );
     if (volDownNlp.hasMatch(textForMatching)) {
       adjustVolume(false);
       return cleanText.trim();
     }
 
-    final volSetNlp = RegExp(r'(?:chỉnh|đặt|cài)\s+âm lượng\s+(\d+)', caseSensitive: false);
+    final volSetNlp = RegExp(
+      r'(?:chỉnh|đặt|cài)\s+âm lượng\s+(\d+)',
+      caseSensitive: false,
+    );
     final volSetMatch = volSetNlp.firstMatch(textForMatching);
     if (volSetMatch != null) {
       final level = int.tryParse(volSetMatch.group(1) ?? '');

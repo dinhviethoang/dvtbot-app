@@ -54,12 +54,16 @@ class MessageBubble extends StatelessWidget {
                             vertical: 12,
                           ),
                   decoration: BoxDecoration(
-                    color: isUser ? const Color(0xFF1E293B) : AppTheme.surfaceColor,
+                    color:
+                        isUser
+                            ? const Color(0xFF1E293B)
+                            : AppTheme.surfaceColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isUser
-                          ? AppTheme.primaryColor.withOpacity(0.35)
-                          : AppTheme.borderColor,
+                      color:
+                          isUser
+                              ? AppTheme.primaryColor.withOpacity(0.35)
+                              : AppTheme.borderColor,
                     ),
                   ),
                   // 检查是否为图片消息
@@ -83,7 +87,10 @@ class MessageBubble extends StatelessWidget {
                 if (message.timestamp != null)
                   Text(
                     _formatTime(message.timestamp),
-                    style: const TextStyle(fontSize: 12, color: AppTheme.secondaryTextColor),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.secondaryTextColor,
+                    ),
                   ),
               ],
             ),
@@ -108,11 +115,7 @@ class MessageBubble extends StatelessWidget {
       child: const CircleAvatar(
         radius: 16,
         backgroundColor: AppTheme.surfaceColor,
-        child: Icon(
-          Icons.mic,
-          size: 18,
-          color: AppTheme.primaryColor,
-        ),
+        child: Icon(Icons.mic, size: 18, color: AppTheme.primaryColor),
       ),
     );
   }
@@ -153,7 +156,10 @@ class MessageBubble extends StatelessWidget {
           ),
           child: Text(
             message.content,
-            style: const TextStyle(fontSize: 12, color: AppTheme.secondaryTextColor),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.secondaryTextColor,
+            ),
           ),
         ),
       ),
@@ -193,10 +199,7 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
               child: Text(
                 message.content,
-                style: const TextStyle(
-                  color: AppTheme.textColor,
-                  fontSize: 13,
-                ),
+                style: const TextStyle(color: AppTheme.textColor, fontSize: 13),
               ),
             ),
         ],

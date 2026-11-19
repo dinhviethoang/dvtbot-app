@@ -8,7 +8,9 @@ class AppTheme {
   static const Color accentColor = Color(0xFF00F0FF); // Neon Aqua
   static const Color textColor = Color(0xFFE2E8F0); // Ice White
   static const Color secondaryTextColor = Color(0xFF94A3B8); // Muted Slate
-  static const Color backgroundColor = Color(0xFF070B12); // Deep Space Black-Navy
+  static const Color backgroundColor = Color(
+    0xFF070B12,
+  ); // Deep Space Black-Navy
   static const Color surfaceColor = Color(0xFF0F172A); // Tech Panel Navy
   static const Color errorColor = Color(0xFFFF1744); // Alert Crimson Red
 
@@ -142,7 +144,10 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: secondaryTextColor),
         hintStyle: const TextStyle(color: Color(0xFF475569)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
       dialogTheme: const DialogThemeData(
         backgroundColor: surfaceColor,
@@ -154,7 +159,7 @@ class AppTheme {
     );
   }
 
-  // Cả lightTheme và darkTheme đều dùng phong cách Cyber HUD tối ưu cho HDVbot
+  // Cả lightTheme và darkTheme đều dùng phong cách Cyber HUD tối ưu cho botAi
   static final ThemeData lightTheme = _buildCyberTheme();
   static final ThemeData darkTheme = _buildCyberTheme();
 }

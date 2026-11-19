@@ -33,7 +33,11 @@ class _ConversationTypeScreenState extends State<ConversationTypeScreen> {
         elevation: 0,
         toolbarHeight: 70,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 26),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppTheme.primaryColor,
+            size: 26,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -45,38 +49,41 @@ class _ConversationTypeScreenState extends State<ConversationTypeScreen> {
           ),
         ),
       ),
-      body: xiaozhiConfigs.isEmpty
-          ? _buildEmptyConfigView(context)
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      const Text(
-                        'Chọn dịch vụ Xiaozhi',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textColor,
+      body:
+          xiaozhiConfigs.isEmpty
+              ? _buildEmptyConfigView(context)
+              : Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        const Text(
+                          'Chọn dịch vụ Xiaozhi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Cuộc trò chuyện sẽ kết nối qua giọng nói và văn bản với dịch vụ đã chọn.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.secondaryTextColor,
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Cuộc trò chuyện sẽ kết nối qua giọng nói và văn bản với dịch vụ đã chọn.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.secondaryTextColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ...xiaozhiConfigs.map((config) => _buildConfigOption(config)),
-                    ],
+                        const SizedBox(height: 20),
+                        ...xiaozhiConfigs.map(
+                          (config) => _buildConfigOption(config),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                _buildBottomButton(),
-              ],
-            ),
+                  _buildBottomButton(),
+                ],
+              ),
     );
   }
 
@@ -124,10 +131,11 @@ class _ConversationTypeScreenState extends State<ConversationTypeScreen> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(
-                      initialTab: 1,
-                      autoShowAddDialog: true,
-                    ),
+                    builder:
+                        (context) => const SettingsScreen(
+                          initialTab: 1,
+                          autoShowAddDialog: true,
+                        ),
                   ),
                 );
               },
@@ -189,12 +197,16 @@ class _ConversationTypeScreenState extends State<ConversationTypeScreen> {
               children: [
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: isSelected
-                      ? AppTheme.primaryColor
-                      : AppTheme.surfaceColor,
+                  backgroundColor:
+                      isSelected
+                          ? AppTheme.primaryColor
+                          : AppTheme.surfaceColor,
                   child: Icon(
                     Icons.mic,
-                    color: isSelected ? const Color(0xFF070B12) : AppTheme.secondaryTextColor,
+                    color:
+                        isSelected
+                            ? const Color(0xFF070B12)
+                            : AppTheme.secondaryTextColor,
                     size: 22,
                   ),
                 ),
@@ -292,7 +304,7 @@ class _ConversationTypeScreenState extends State<ConversationTypeScreen> {
       context,
       listen: false,
     ).createConversation(
-      title: config.name.isNotEmpty ? config.name : 'HDVbot',
+      title: config.name.isNotEmpty ? config.name : 'botAi',
       type: ConversationType.xiaozhi,
       configId: config.id,
     );

@@ -306,8 +306,8 @@ FaceEmotion? detectEmotionFromText(String text) {
       final targetOrig = ' $kwLower ';
       final targetNorm = ' $kwNorm ';
 
-      final bool matched = paddedOrig.contains(targetOrig) ||
-          paddedNorm.contains(targetNorm);
+      final bool matched =
+          paddedOrig.contains(targetOrig) || paddedNorm.contains(targetNorm);
 
       if (matched) {
         final candidate = _EmotionMatch(

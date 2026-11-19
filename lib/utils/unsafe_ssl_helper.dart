@@ -25,7 +25,9 @@ class UnsafeSslHelper {
     try {
       HttpOverrides.global = UnsafeHttpOverrides();
       _initialized = true;
-      print('UnsafeSslHelper: Đã kích hoạt UnsafeHttpOverrides.global thành công');
+      print(
+        'UnsafeSslHelper: Đã kích hoạt UnsafeHttpOverrides.global thành công',
+      );
     } catch (e) {
       print('UnsafeSslHelper: Lỗi khi thiết lập HttpOverrides: $e');
     }

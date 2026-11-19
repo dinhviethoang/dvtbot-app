@@ -57,7 +57,8 @@ class XiaozhiOtaService {
 
   final http.Client _client;
 
-  XiaozhiOtaService({http.Client? client}) : _client = client ?? UnsafeSslHelper.getUnsafeHttpClient();
+  XiaozhiOtaService({http.Client? client})
+    : _client = client ?? UnsafeSslHelper.getUnsafeHttpClient();
 
   /// Chuẩn hóa URL OTA, luôn đảm bảo kết thúc bằng dấu gạch chéo '/'
   String _normalizeOtaUrl(String? url) {
@@ -97,12 +98,7 @@ class XiaozhiOtaService {
       "mac_address": lowerMac,
       "uuid": clientId,
       "chip_model_name": "esp32s3",
-      "chip_info": {
-        "model": 9,
-        "cores": 2,
-        "revision": 2,
-        "features": 18,
-      },
+      "chip_info": {"model": 9, "cores": 2, "revision": 2, "features": 18},
       "application": {
         "name": "xiaozhi",
         "version": "1.6.0",
@@ -112,9 +108,7 @@ class XiaozhiOtaService {
             "0000000000000000000000000000000000000000000000000000000000000000",
       },
       "partition_table": [],
-      "ota": {
-        "label": "factory",
-      },
+      "ota": {"label": "factory"},
       "board": {
         "type": "hdvbot-android",
         "name": "hdvbot-android",
@@ -241,9 +235,7 @@ class XiaozhiOtaService {
               ? response.body.substring(0, 200)
               : response.body;
       print('$TAG: activate lỗi HTTP ${response.statusCode}: $preview');
-      throw Exception(
-        'Lỗi kích hoạt (HTTP ${response.statusCode}): $preview',
-      );
+      throw Exception('Lỗi kích hoạt (HTTP ${response.statusCode}): $preview');
     }
   }
 
@@ -328,7 +320,9 @@ class XiaozhiOtaService {
 
           final elapsed = DateTime.now().difference(startTime).inMilliseconds;
           if (elapsed >= timeoutMs || pollCount >= 10) {
-            print('$TAG: Đạt giới hạn poll ($pollCount) hoặc timeout ($elapsed ms), lấy mã mới...');
+            print(
+              '$TAG: Đạt giới hạn poll ($pollCount) hoặc timeout ($elapsed ms), lấy mã mới...',
+            );
             onStatusChange?.call('Đang lấy mã kích hoạt mới...');
             final newResult = await checkVersion(
               otaUrl: otaUrl,
@@ -401,10 +395,14 @@ class XiaozhiOtaService {
 
     if (finalResult.websocketUrl == null ||
         finalResult.websocketUrl!.trim().isEmpty) {
-      throw Exception('Máy chủ chưa trả về địa chỉ WebSocket sau khi kích hoạt');
+      throw Exception(
+        'Máy chủ chưa trả về địa chỉ WebSocket sau khi kích hoạt',
+      );
     }
 
-    print('$TAG: Hoàn tất kích hoạt. WebSocket URL: ${finalResult.websocketUrl}');
+    print(
+      '$TAG: Hoàn tất kích hoạt. WebSocket URL: ${finalResult.websocketUrl}',
+    );
     return OtaActivationResult(
       websocketUrl: finalResult.websocketUrl!,
       websocketToken: finalResult.websocketToken ?? '',

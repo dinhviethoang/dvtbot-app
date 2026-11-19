@@ -292,7 +292,8 @@ class AudioUtil {
                 final double norm = sample / 32768.0;
                 sumSquares += norm * norm;
               }
-              final double rms = (sampleCount > 0) ? math.sqrt(sumSquares / sampleCount) : 0.0;
+              final double rms =
+                  (sampleCount > 0) ? math.sqrt(sumSquares / sampleCount) : 0.0;
               if (!_amplitudeStreamController.isClosed) {
                 _amplitudeStreamController.add(rms.clamp(0.0, 1.0));
               }

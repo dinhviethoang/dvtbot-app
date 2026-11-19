@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Các trạng thái biểu cảm của mắt robot HDVbot
+/// Các trạng thái biểu cảm của mắt robot botAi
 enum RobotEyeState {
   idle, // Nghỉ ngơi: thỉnh thoảng chớp mắt cơ khí, mống mắt đảo nhẹ
   listening, // Đang nghe: mống mắt mở rộng, vòng sáng phản hồi theo âm lượng
@@ -18,7 +18,8 @@ enum RobotEyeState {
 /// - Chỉ dùng duy nhất một AnimationController
 class RobotEyes extends StatefulWidget {
   final RobotEyeState state;
-  final double volume; // Giá trị âm lượng 0.0 -> 1.0 (cho listening và speaking)
+  final double
+  volume; // Giá trị âm lượng 0.0 -> 1.0 (cho listening và speaking)
   final double width;
   final double height;
 
@@ -154,7 +155,15 @@ class _RobotEyesPainter extends CustomPainter {
     final Color darkGlowColor = isError ? colorRedDark : colorCyanDark;
 
     // 1. Vẽ các đường mạch điện tử (circuit lines) nền
-    _drawCircuitTraces(canvas, centerX, centerY, eyeWidth, eyeHeight, eyeGap, mainColor);
+    _drawCircuitTraces(
+      canvas,
+      centerX,
+      centerY,
+      eyeWidth,
+      eyeHeight,
+      eyeGap,
+      mainColor,
+    );
 
     // 2. Vẽ mắt trái
     _drawSingleEye(
@@ -214,34 +223,55 @@ class _RobotEyesPainter extends CustomPainter {
     // --- HỐC MẮT GÓC CẠNH (ANGULAR MECHA SOCKET) ---
     // Hình đa giác 6 cạnh vát góc khí động học phong cách robot chiến đấu
     final Path socketPath = Path();
-    socketPath.moveTo(eyeCenterX - (halfW * 0.95 * dir), eyeCenterY - halfH * 0.20); // Điểm ngoài - trên
-    socketPath.lineTo(eyeCenterX - (halfW * 0.30 * dir), eyeCenterY - halfH * 0.95); // Điểm giữa đỉnh
-    socketPath.lineTo(eyeCenterX + (halfW * 0.90 * dir), eyeCenterY - halfH * 0.70); // Điểm trong - trên
-    socketPath.lineTo(eyeCenterX + (halfW * 0.95 * dir), eyeCenterY + halfH * 0.30); // Điểm trong - dưới
-    socketPath.lineTo(eyeCenterX - (halfW * 0.20 * dir), eyeCenterY + halfH * 0.95); // Điểm giữa đáy
-    socketPath.lineTo(eyeCenterX - (halfW * 0.90 * dir), eyeCenterY + halfH * 0.50); // Điểm ngoài - dưới
+    socketPath.moveTo(
+      eyeCenterX - (halfW * 0.95 * dir),
+      eyeCenterY - halfH * 0.20,
+    ); // Điểm ngoài - trên
+    socketPath.lineTo(
+      eyeCenterX - (halfW * 0.30 * dir),
+      eyeCenterY - halfH * 0.95,
+    ); // Điểm giữa đỉnh
+    socketPath.lineTo(
+      eyeCenterX + (halfW * 0.90 * dir),
+      eyeCenterY - halfH * 0.70,
+    ); // Điểm trong - trên
+    socketPath.lineTo(
+      eyeCenterX + (halfW * 0.95 * dir),
+      eyeCenterY + halfH * 0.30,
+    ); // Điểm trong - dưới
+    socketPath.lineTo(
+      eyeCenterX - (halfW * 0.20 * dir),
+      eyeCenterY + halfH * 0.95,
+    ); // Điểm giữa đáy
+    socketPath.lineTo(
+      eyeCenterX - (halfW * 0.90 * dir),
+      eyeCenterY + halfH * 0.50,
+    ); // Điểm ngoài - dưới
     socketPath.close();
 
     // Lớp 1: Khung kim loại viền ngoài dày dặn
-    final Paint metalFramePaint = Paint()
-      ..color = colorMetalFrame
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
+    final Paint metalFramePaint =
+        Paint()
+          ..color = colorMetalFrame
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.5
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
     canvas.drawPath(socketPath, metalFramePaint);
 
     // Lớp 2: Khung vát kim loại tối màu bên ngoài (vát 3D)
-    final Paint metalBevelPaint = Paint()
-      ..color = colorMetalBevel
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+    final Paint metalBevelPaint =
+        Paint()
+          ..color = colorMetalBevel
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
     canvas.drawPath(socketPath, metalBevelPaint);
 
     // Lớp 3: Khoang tối obsidian bên trong
-    final Paint cavityPaint = Paint()
-      ..color = colorCavity
-      ..style = PaintingStyle.fill;
+    final Paint cavityPaint =
+        Paint()
+          ..color = colorCavity
+          ..style = PaintingStyle.fill;
     canvas.drawPath(socketPath, cavityPaint);
 
     // Cắt phạm vi vẽ nội nhãn bên trong hốc mắt
@@ -249,10 +279,11 @@ class _RobotEyesPainter extends CustomPainter {
     canvas.clipPath(socketPath);
 
     // --- LƯỚI QUÉT SCANLINE MECHA ---
-    final Paint scanlinePaint = Paint()
-      ..color = darkGlowColor.withOpacity(0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+    final Paint scanlinePaint =
+        Paint()
+          ..color = darkGlowColor.withOpacity(0.12)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
     for (double y = eyeCenterY - halfH; y <= eyeCenterY + halfH; y += 8.0) {
       canvas.drawLine(
         Offset(eyeCenterX - halfW, y),
@@ -293,15 +324,25 @@ class _RobotEyesPainter extends CustomPainter {
 
     // --- MỐNG MẮT PHÁT SÁNG ĐA LỚP (GLOWING IRIS & CORE) ---
     // Vầng hào quang ngoài (không dùng blur, dùng alpha xếp lớp nhẹ)
-    final Paint outerGlowPaint = Paint()
-      ..color = darkGlowColor.withOpacity(0.25)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(irisCenterX, irisCenterY), baseRadius * 1.25, outerGlowPaint);
+    final Paint outerGlowPaint =
+        Paint()
+          ..color = darkGlowColor.withOpacity(0.25)
+          ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(irisCenterX, irisCenterY),
+      baseRadius * 1.25,
+      outerGlowPaint,
+    );
 
-    final Paint midGlowPaint = Paint()
-      ..color = mainColor.withOpacity(0.45)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(irisCenterX, irisCenterY), baseRadius * 0.95, midGlowPaint);
+    final Paint midGlowPaint =
+        Paint()
+          ..color = mainColor.withOpacity(0.45)
+          ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(irisCenterX, irisCenterY),
+      baseRadius * 0.95,
+      midGlowPaint,
+    );
 
     // Mống mắt đa giác lục giác cơ khí
     final Path irisHex = Path();
@@ -317,27 +358,39 @@ class _RobotEyesPainter extends CustomPainter {
     }
     irisHex.close();
 
-    final Paint irisPaint = Paint()
-      ..color = mainColor
-      ..style = PaintingStyle.fill;
+    final Paint irisPaint =
+        Paint()
+          ..color = mainColor
+          ..style = PaintingStyle.fill;
     canvas.drawPath(irisHex, irisPaint);
 
     // Lõi phát sáng trắng/cyan nóng rực ở tâm (Hot pupil core)
-    final Paint corePaint = Paint()
-      ..color = coreColor
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(irisCenterX, irisCenterY), baseRadius * 0.38, corePaint);
+    final Paint corePaint =
+        Paint()
+          ..color = coreColor
+          ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(irisCenterX, irisCenterY),
+      baseRadius * 0.38,
+      corePaint,
+    );
 
-    final Paint whiteHotPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(irisCenterX, irisCenterY), baseRadius * 0.18, whiteHotPaint);
+    final Paint whiteHotPaint =
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill;
+    canvas.drawCircle(
+      Offset(irisCenterX, irisCenterY),
+      baseRadius * 0.18,
+      whiteHotPaint,
+    );
 
     // Điểm nhấn công nghệ: thanh quét con ngươi ngang
-    final Paint slitPaint = Paint()
-      ..color = Colors.white.withOpacity(0.85)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+    final Paint slitPaint =
+        Paint()
+          ..color = Colors.white.withOpacity(0.85)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5;
     canvas.drawLine(
       Offset(irisCenterX - (baseRadius * 0.50), irisCenterY),
       Offset(irisCenterX + (baseRadius * 0.50), irisCenterY),
@@ -349,29 +402,33 @@ class _RobotEyesPainter extends CustomPainter {
       final double closeOffset = (halfH + 4) * blinkProgress;
 
       // Mí trên trượt xuống
-      final Path topLid = Path()
-        ..moveTo(eyeCenterX - halfW - 2, eyeCenterY - halfH - 2)
-        ..lineTo(eyeCenterX + halfW + 2, eyeCenterY - halfH - 2)
-        ..lineTo(eyeCenterX + halfW + 2, eyeCenterY - halfH + closeOffset)
-        ..lineTo(eyeCenterX - halfW - 2, eyeCenterY - halfH + closeOffset)
-        ..close();
+      final Path topLid =
+          Path()
+            ..moveTo(eyeCenterX - halfW - 2, eyeCenterY - halfH - 2)
+            ..lineTo(eyeCenterX + halfW + 2, eyeCenterY - halfH - 2)
+            ..lineTo(eyeCenterX + halfW + 2, eyeCenterY - halfH + closeOffset)
+            ..lineTo(eyeCenterX - halfW - 2, eyeCenterY - halfH + closeOffset)
+            ..close();
 
       // Mí dưới trượt lên
-      final Path bottomLid = Path()
-        ..moveTo(eyeCenterX - halfW - 2, eyeCenterY + halfH + 2)
-        ..lineTo(eyeCenterX + halfW + 2, eyeCenterY + halfH + 2)
-        ..lineTo(eyeCenterX + halfW + 2, eyeCenterY + halfH - closeOffset)
-        ..lineTo(eyeCenterX - halfW - 2, eyeCenterY + halfH - closeOffset)
-        ..close();
+      final Path bottomLid =
+          Path()
+            ..moveTo(eyeCenterX - halfW - 2, eyeCenterY + halfH + 2)
+            ..lineTo(eyeCenterX + halfW + 2, eyeCenterY + halfH + 2)
+            ..lineTo(eyeCenterX + halfW + 2, eyeCenterY + halfH - closeOffset)
+            ..lineTo(eyeCenterX - halfW - 2, eyeCenterY + halfH - closeOffset)
+            ..close();
 
-      final Paint lidPaint = Paint()
-        ..color = colorMetalDark
-        ..style = PaintingStyle.fill;
+      final Paint lidPaint =
+          Paint()
+            ..color = colorMetalDark
+            ..style = PaintingStyle.fill;
 
-      final Paint lidEdgePaint = Paint()
-        ..color = mainColor.withOpacity(0.8)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
+      final Paint lidEdgePaint =
+          Paint()
+            ..color = mainColor.withOpacity(0.8)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5;
 
       canvas.drawPath(topLid, lidPaint);
       canvas.drawPath(bottomLid, lidPaint);
@@ -393,7 +450,15 @@ class _RobotEyesPainter extends CustomPainter {
     canvas.restore();
 
     // --- VẠCH HIỆU CHUẨN GÓC HUD (CORNER CALIBRATION BRACKETS) ---
-    _drawCornerBrackets(canvas, eyeCenterX, eyeCenterY, halfW, halfH, dir, mainColor);
+    _drawCornerBrackets(
+      canvas,
+      eyeCenterX,
+      eyeCenterY,
+      halfW,
+      halfH,
+      dir,
+      mainColor,
+    );
   }
 
   /// Vẽ các vòng quét HUD đồng tâm và cung xoay
@@ -407,12 +472,16 @@ class _RobotEyesPainter extends CustomPainter {
     required bool isThinking,
   }) {
     // Vòng cung đứt đoạn 1 (vòng chính)
-    final Rect ringRect = Rect.fromCircle(center: Offset(cx, cy), radius: radius);
-    final Paint arcPaint = Paint()
-      ..color = color.withOpacity(0.65)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = isThinking ? 2.2 : 1.5
-      ..strokeCap = StrokeCap.round;
+    final Rect ringRect = Rect.fromCircle(
+      center: Offset(cx, cy),
+      radius: radius,
+    );
+    final Paint arcPaint =
+        Paint()
+          ..color = color.withOpacity(0.65)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = isThinking ? 2.2 : 1.5
+          ..strokeCap = StrokeCap.round;
 
     // Vẽ 4 đoạn cung cách đều nhau
     const double arcLength = math.pi * 0.35;
@@ -422,16 +491,18 @@ class _RobotEyesPainter extends CustomPainter {
     }
 
     // Vòng mỏng đồng tâm ngoài
-    final Paint thinRingPaint = Paint()
-      ..color = color.withOpacity(0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
+    final Paint thinRingPaint =
+        Paint()
+          ..color = color.withOpacity(0.25)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8;
     canvas.drawCircle(Offset(cx, cy), radius * 1.15, thinRingPaint);
 
     // Chấm tọa độ HUD
-    final Paint tickPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final Paint tickPaint =
+        Paint()
+          ..color = color
+          ..style = PaintingStyle.fill;
     for (int i = 0; i < 8; i++) {
       final double a = rotation * 0.5 + (i * math.pi / 4);
       final double tx = cx + (radius * 1.15 * math.cos(a));
@@ -450,10 +521,11 @@ class _RobotEyesPainter extends CustomPainter {
     double dir,
     Color color,
   ) {
-    final Paint bracketPaint = Paint()
-      ..color = color.withOpacity(0.40)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
+    final Paint bracketPaint =
+        Paint()
+          ..color = color.withOpacity(0.40)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2;
 
     const double bracketLen = 8.0;
     final double left = cx - halfW - 4;
@@ -462,20 +534,52 @@ class _RobotEyesPainter extends CustomPainter {
     final double bottom = cy + halfH + 4;
 
     // Góc trên - ngoài
-    canvas.drawLine(Offset(left, top + bracketLen), Offset(left, top), bracketPaint);
-    canvas.drawLine(Offset(left, top), Offset(left + bracketLen, top), bracketPaint);
+    canvas.drawLine(
+      Offset(left, top + bracketLen),
+      Offset(left, top),
+      bracketPaint,
+    );
+    canvas.drawLine(
+      Offset(left, top),
+      Offset(left + bracketLen, top),
+      bracketPaint,
+    );
 
     // Góc dưới - ngoài
-    canvas.drawLine(Offset(left, bottom - bracketLen), Offset(left, bottom), bracketPaint);
-    canvas.drawLine(Offset(left, bottom), Offset(left + bracketLen, bottom), bracketPaint);
+    canvas.drawLine(
+      Offset(left, bottom - bracketLen),
+      Offset(left, bottom),
+      bracketPaint,
+    );
+    canvas.drawLine(
+      Offset(left, bottom),
+      Offset(left + bracketLen, bottom),
+      bracketPaint,
+    );
 
     // Góc trên - trong
-    canvas.drawLine(Offset(right - bracketLen, top), Offset(right, top), bracketPaint);
-    canvas.drawLine(Offset(right, top), Offset(right, top + bracketLen), bracketPaint);
+    canvas.drawLine(
+      Offset(right - bracketLen, top),
+      Offset(right, top),
+      bracketPaint,
+    );
+    canvas.drawLine(
+      Offset(right, top),
+      Offset(right, top + bracketLen),
+      bracketPaint,
+    );
 
     // Góc dưới - trong
-    canvas.drawLine(Offset(right - bracketLen, bottom), Offset(right, bottom), bracketPaint);
-    canvas.drawLine(Offset(right, bottom), Offset(right, bottom - bracketLen), bracketPaint);
+    canvas.drawLine(
+      Offset(right - bracketLen, bottom),
+      Offset(right, bottom),
+      bracketPaint,
+    );
+    canvas.drawLine(
+      Offset(right, bottom),
+      Offset(right, bottom - bracketLen),
+      bracketPaint,
+    );
   }
 
   /// Vẽ đường mạch điện tử vi tính (Cyber Circuit Traces) nối hai bên thái dương
@@ -488,14 +592,16 @@ class _RobotEyesPainter extends CustomPainter {
     double gap,
     Color color,
   ) {
-    final Paint tracePaint = Paint()
-      ..color = color.withOpacity(0.20)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+    final Paint tracePaint =
+        Paint()
+          ..color = color.withOpacity(0.20)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
 
-    final Paint nodePaint = Paint()
-      ..color = color.withOpacity(0.45)
-      ..style = PaintingStyle.fill;
+    final Paint nodePaint =
+        Paint()
+          ..color = color.withOpacity(0.45)
+          ..style = PaintingStyle.fill;
 
     // Cầu nối trung tâm giữa hai mắt
     final double bridgeY = cy - eyeH * 0.40;
@@ -510,21 +616,23 @@ class _RobotEyesPainter extends CustomPainter {
 
     // Đường mạch thái dương trái
     final double leftOutX = cx - (gap / 2) - eyeW;
-    final Path leftTrace = Path()
-      ..moveTo(leftOutX + 6, cy - eyeH * 0.20)
-      ..lineTo(leftOutX - 16, cy - eyeH * 0.20)
-      ..lineTo(leftOutX - 28, cy - eyeH * 0.45)
-      ..lineTo(leftOutX - 42, cy - eyeH * 0.45);
+    final Path leftTrace =
+        Path()
+          ..moveTo(leftOutX + 6, cy - eyeH * 0.20)
+          ..lineTo(leftOutX - 16, cy - eyeH * 0.20)
+          ..lineTo(leftOutX - 28, cy - eyeH * 0.45)
+          ..lineTo(leftOutX - 42, cy - eyeH * 0.45);
     canvas.drawPath(leftTrace, tracePaint);
     canvas.drawCircle(Offset(leftOutX - 42, cy - eyeH * 0.45), 2.0, nodePaint);
 
     // Đường mạch thái dương phải
     final double rightOutX = cx + (gap / 2) + eyeW;
-    final Path rightTrace = Path()
-      ..moveTo(rightOutX - 6, cy - eyeH * 0.20)
-      ..lineTo(rightOutX + 16, cy - eyeH * 0.20)
-      ..lineTo(rightOutX + 28, cy - eyeH * 0.45)
-      ..lineTo(rightOutX + 42, cy - eyeH * 0.45);
+    final Path rightTrace =
+        Path()
+          ..moveTo(rightOutX - 6, cy - eyeH * 0.20)
+          ..lineTo(rightOutX + 16, cy - eyeH * 0.20)
+          ..lineTo(rightOutX + 28, cy - eyeH * 0.45)
+          ..lineTo(rightOutX + 42, cy - eyeH * 0.45);
     canvas.drawPath(rightTrace, tracePaint);
     canvas.drawCircle(Offset(rightOutX + 42, cy - eyeH * 0.45), 2.0, nodePaint);
   }

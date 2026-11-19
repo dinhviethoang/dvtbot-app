@@ -70,7 +70,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         elevation: 0,
         toolbarHeight: 70,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.primaryColor, size: 26),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppTheme.primaryColor,
+            size: 26,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
@@ -88,10 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildGeneralTab(),
-                _buildXiaozhiConfigTab(),
-              ],
+              children: [_buildGeneralTab(), _buildXiaozhiConfigTab()],
             ),
           ),
         ],
@@ -152,10 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             fontWeight: FontWeight.w500,
             fontSize: 15,
           ),
-          tabs: const [
-            Tab(text: 'Chung'),
-            Tab(text: 'Xiaozhi AI'),
-          ],
+          tabs: const [Tab(text: 'Chung'), Tab(text: 'Xiaozhi AI')],
         ),
       ),
     );
@@ -182,20 +180,23 @@ class _SettingsScreenState extends State<SettingsScreen>
                         width: 56,
                         height: 56,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceColor,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppTheme.primaryColor),
-                          ),
-                          child: const Icon(
-                            Icons.smart_toy_outlined,
-                            size: 32,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
+                        errorBuilder:
+                            (_, __, ___) => Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceColor,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.smart_toy_outlined,
+                                size: 32,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -204,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'HDVbot',
+                            'botAi',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -238,7 +239,10 @@ class _SettingsScreenState extends State<SettingsScreen>
               title: 'Đánh thức bằng giọng nói',
               subtitle: 'Tự động đánh thức robot khi phát hiện tiếng nói',
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   children: [
                     SwitchListTile(
@@ -285,11 +289,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor.withOpacity(0.15),
+                                    color: AppTheme.primaryColor.withOpacity(
+                                      0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: AppTheme.primaryColor.withOpacity(0.4)),
+                                    border: Border.all(
+                                      color: AppTheme.primaryColor.withOpacity(
+                                        0.4,
+                                      ),
+                                    ),
                                   ),
                                   child: Text(
                                     '${_voiceWakeDbfs.round()} dBFS',
@@ -312,17 +325,34 @@ class _SettingsScreenState extends State<SettingsScreen>
                               label: '${_voiceWakeDbfs.round()} dBFS',
                               onChanged: (val) async {
                                 setState(() => _voiceWakeDbfs = val);
-                                final prefs = await SharedPreferences.getInstance();
+                                final prefs =
+                                    await SharedPreferences.getInstance();
                                 await prefs.setDouble('voice_wake_dbfs', val);
-                                final threshold = math.pow(10, val / 20).toDouble();
-                                await prefs.setDouble('voice_wake_threshold', threshold);
+                                final threshold =
+                                    math.pow(10, val / 20).toDouble();
+                                await prefs.setDouble(
+                                  'voice_wake_threshold',
+                                  threshold,
+                                );
                               },
                             ),
                             const Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('Nhạy hơn (-45 dBFS)', style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 11)),
-                                Text('Nói to (-15 dBFS)', style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 11)),
+                                Text(
+                                  'Nhạy hơn (-45 dBFS)',
+                                  style: TextStyle(
+                                    color: AppTheme.secondaryTextColor,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  'Nói to (-15 dBFS)',
+                                  style: TextStyle(
+                                    color: AppTheme.secondaryTextColor,
+                                    fontSize: 11,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -343,11 +373,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     return Consumer<ConfigProvider>(
       builder: (context, configProvider, child) {
         final currentMode = configProvider.appMode;
-        final geminiKeyController = TextEditingController(text: configProvider.geminiApiKey);
+        final geminiKeyController = TextEditingController(
+          text: configProvider.geminiApiKey,
+        );
 
         return _buildCard(
           title: 'Chế độ hoạt động AI',
-          subtitle: 'Chọn phương thức kết nối AI cho HDVbot',
+          subtitle: 'Chọn phương thức kết nối AI cho botAi',
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -356,14 +388,16 @@ class _SettingsScreenState extends State<SettingsScreen>
                 // Chế độ 1: Xiaozhi Server
                 Container(
                   decoration: BoxDecoration(
-                    color: currentMode == 'xiaozhi'
-                        ? AppTheme.primaryColor.withOpacity(0.12)
-                        : AppTheme.backgroundColor,
+                    color:
+                        currentMode == 'xiaozhi'
+                            ? AppTheme.primaryColor.withOpacity(0.12)
+                            : AppTheme.backgroundColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: currentMode == 'xiaozhi'
-                          ? AppTheme.primaryColor
-                          : AppTheme.borderColor,
+                      color:
+                          currentMode == 'xiaozhi'
+                              ? AppTheme.primaryColor
+                              : AppTheme.borderColor,
                     ),
                   ),
                   child: RadioListTile<String>(
@@ -377,7 +411,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     subtitle: const Text(
                       'Kết nối hệ sinh thái Xiaozhi qua OTA và WebSocket thời gian thực.',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 13),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 13,
+                      ),
                     ),
                     value: 'xiaozhi',
                     groupValue: currentMode,
@@ -391,14 +428,16 @@ class _SettingsScreenState extends State<SettingsScreen>
                 // Chế độ 2: Gemini Direct API (Fallback)
                 Container(
                   decoration: BoxDecoration(
-                    color: currentMode == 'gemini'
-                        ? AppTheme.primaryColor.withOpacity(0.12)
-                        : AppTheme.backgroundColor,
+                    color:
+                        currentMode == 'gemini'
+                            ? AppTheme.primaryColor.withOpacity(0.12)
+                            : AppTheme.backgroundColor,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: currentMode == 'gemini'
-                          ? AppTheme.primaryColor
-                          : AppTheme.borderColor,
+                      color:
+                          currentMode == 'gemini'
+                              ? AppTheme.primaryColor
+                              : AppTheme.borderColor,
                     ),
                   ),
                   child: RadioListTile<String>(
@@ -412,7 +451,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     subtitle: const Text(
                       'Giao tiếp trực tiếp với Google Gemini AI khi không dùng server Xiaozhi.',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 13),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 13,
+                      ),
                     ),
                     value: 'gemini',
                     groupValue: currentMode,
@@ -444,11 +486,19 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                           child: TextField(
                             controller: geminiKeyController,
-                            style: const TextStyle(color: AppTheme.textColor, fontSize: 14),
+                            style: const TextStyle(
+                              color: AppTheme.textColor,
+                              fontSize: 14,
+                            ),
                             decoration: const InputDecoration(
                               hintText: 'Nhập Google Gemini API Key...',
-                              hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              hintStyle: TextStyle(
+                                color: AppTheme.secondaryTextColor,
+                              ),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
                               border: InputBorder.none,
                             ),
                           ),
@@ -457,11 +507,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () async {
-                          await configProvider.setGeminiApiKey(geminiKeyController.text.trim());
+                          await configProvider.setGeminiApiKey(
+                            geminiKeyController.text.trim(),
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Đã lưu Gemini API Key thành công!'),
+                                content: Text(
+                                  'Đã lưu Gemini API Key thành công!',
+                                ),
                                 backgroundColor: AppTheme.primaryColor,
                               ),
                             );
@@ -470,8 +524,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: const Color(0xFF070B12),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                         child: const Text('Lưu'),
                       ),
@@ -490,22 +549,26 @@ class _SettingsScreenState extends State<SettingsScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          color: AppTheme.surfaceColor,
-          child: Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(color: AppTheme.primaryColor),
-                SizedBox(height: 16),
-                Text('Đang kết nối OTA lấy mã xác minh...', style: TextStyle(color: AppTheme.textColor)),
-              ],
+      builder:
+          (context) => const Center(
+            child: Card(
+              color: AppTheme.surfaceColor,
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: AppTheme.primaryColor),
+                    SizedBox(height: 16),
+                    Text(
+                      'Đang kết nối OTA lấy mã xác minh...',
+                      style: TextStyle(color: AppTheme.textColor),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
     );
 
     try {
@@ -521,136 +584,214 @@ class _SettingsScreenState extends State<SettingsScreen>
 
       showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppTheme.borderColor),
-          ),
-          title: const Text('Thông tin OTA & Kích hoạt', style: TextStyle(color: AppTheme.textColor, fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.circular(10),
+        builder:
+            (ctx) => AlertDialog(
+              backgroundColor: AppTheme.surfaceColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: AppTheme.borderColor),
+              ),
+              title: const Text(
+                'Thông tin OTA & Kích hoạt',
+                style: TextStyle(
+                  color: AppTheme.textColor,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.backgroundColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Địa chỉ MAC thiết bị:',
+                                style: TextStyle(
+                                  color: AppTheme.secondaryTextColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              SelectableText(
+                                config.macAddress,
+                                style: const TextStyle(
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.copy,
+                            color: AppTheme.primaryColor,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            Clipboard.setData(
+                              ClipboardData(text: config.macAddress),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Đã sao chép MAC: ${config.macAddress}',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (result.hasActivationCode) ...[
+                    const Text(
+                      'MÃ XÁC MINH 6 SỐ:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.accentColor,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        result.activationCode!.split('').join(' '),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentColor,
+                          letterSpacing: 4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(
+                          ClipboardData(text: result.activationCode!),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Đã sao chép mã: ${result.activationCode}',
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.copy,
+                        size: 16,
+                        color: AppTheme.accentColor,
+                      ),
+                      label: const Text(
+                        'Sao chép mã xác minh',
+                        style: TextStyle(color: AppTheme.accentColor),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Nhập mã này lên trang web xiaozhi.me để liên kết thiết bị!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.textColor, fontSize: 13),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green),
+                      ),
+                      child: const Row(
                         children: [
-                          const Text('Địa chỉ MAC thiết bị:', style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          SelectableText(
-                            config.macAddress,
-                            style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 15),
+                          Icon(Icons.check_circle, color: Colors.green),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Thiết bị đã được kích hoạt thành công!',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.copy, color: AppTheme.primaryColor, size: 20),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: config.macAddress));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Đã sao chép MAC: ${config.macAddress}')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (result.hasActivationCode) ...[
-                const Text('MÃ XÁC MINH 6 SỐ:', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.accentColor, width: 1.5),
-                  ),
-                  child: Text(
-                    result.activationCode!.split('').join(' '),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.accentColor, letterSpacing: 4),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: result.activationCode!));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Đã sao chép mã: ${result.activationCode}')),
-                    );
-                  },
-                  icon: const Icon(Icons.copy, size: 16, color: AppTheme.accentColor),
-                  label: const Text('Sao chép mã xác minh', style: TextStyle(color: AppTheme.accentColor)),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Nhập mã này lên trang web xiaozhi.me để liên kết thiết bị!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: AppTheme.textColor, fontSize: 13),
-                ),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.green),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Thiết bị đã được kích hoạt thành công!',
-                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                    if (result.websocketUrl != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'WebSocket URL: ${result.websocketUrl}',
+                        style: const TextStyle(
+                          color: AppTheme.secondaryTextColor,
+                          fontSize: 12,
                         ),
                       ),
                     ],
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Đóng',
+                    style: TextStyle(color: AppTheme.primaryColor),
                   ),
                 ),
-                if (result.websocketUrl != null) ...[
-                  const SizedBox(height: 8),
-                  Text('WebSocket URL: ${result.websocketUrl}', style: const TextStyle(color: AppTheme.secondaryTextColor, fontSize: 12)),
-                ],
               ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Đóng', style: TextStyle(color: AppTheme.primaryColor)),
             ),
-          ],
-        ),
       );
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop();
       showDialog(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
-          title: const Text('Lỗi kết nối OTA', style: TextStyle(color: AppTheme.errorColor)),
-          content: Text(e.toString().replaceFirst('Exception: ', ''), style: const TextStyle(color: AppTheme.textColor)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Đóng', style: TextStyle(color: AppTheme.primaryColor)),
+        builder:
+            (ctx) => AlertDialog(
+              backgroundColor: AppTheme.surfaceColor,
+              title: const Text(
+                'Lỗi kết nối OTA',
+                style: TextStyle(color: AppTheme.errorColor),
+              ),
+              content: Text(
+                e.toString().replaceFirst('Exception: ', ''),
+                style: const TextStyle(color: AppTheme.textColor),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text(
+                    'Đóng',
+                    style: TextStyle(color: AppTheme.primaryColor),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     }
   }
@@ -670,7 +811,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                 subtitle: 'Quản lý cấu hình kết nối giọng nói Xiaozhi',
                 actionButton: ElevatedButton.icon(
                   onPressed: _showAddXiaozhiConfigDialog,
-                  icon: const Icon(Icons.add, color: Color(0xFF070B12), size: 18),
+                  icon: const Icon(
+                    Icons.add,
+                    color: Color(0xFF070B12),
+                    size: 18,
+                  ),
                   label: const Text(
                     'Thêm dịch vụ',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
@@ -698,7 +843,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                           child: Text(
                             'Chưa có cấu hình Xiaozhi nào.\nNhấn nút "Thêm dịch vụ" ở trên để bắt đầu.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 14),
+                            style: TextStyle(
+                              color: AppTheme.secondaryTextColor,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       )
@@ -742,12 +890,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppTheme.primaryColor.withOpacity(0.5)),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withOpacity(0.5),
+                    ),
                   ),
                   child: const CircleAvatar(
                     radius: 24,
                     backgroundColor: AppTheme.surfaceColor,
-                    child: Icon(Icons.mic, color: AppTheme.primaryColor, size: 26),
+                    child: Icon(
+                      Icons.mic,
+                      color: AppTheme.primaryColor,
+                      size: 26,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -820,12 +974,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                     children: [
                       const Text(
                         'Địa chỉ MAC:',
-                        style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 14),
+                        style: TextStyle(
+                          color: AppTheme.secondaryTextColor,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        config.macAddress.isEmpty ? 'Tự động' : config.macAddress,
-                        style: const TextStyle(fontSize: 14, color: AppTheme.textColor),
+                        config.macAddress.isEmpty
+                            ? 'Tự động'
+                            : config.macAddress,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textColor,
+                        ),
                       ),
                     ],
                   ),
@@ -836,12 +998,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                     children: [
                       const Text(
                         'Token:',
-                        style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 14),
+                        style: TextStyle(
+                          color: AppTheme.secondaryTextColor,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         config.token.isEmpty ? 'Mặc định' : config.token,
-                        style: const TextStyle(fontSize: 14, color: AppTheme.textColor),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textColor,
+                        ),
                       ),
                     ],
                   ),
@@ -854,7 +1022,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      final mac = config.macAddress.isEmpty ? 'Chưa có MAC' : config.macAddress;
+                      final mac =
+                          config.macAddress.isEmpty
+                              ? 'Chưa có MAC'
+                              : config.macAddress;
                       Clipboard.setData(ClipboardData(text: mac));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -863,14 +1034,23 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ),
                       );
                     },
-                    icon: const Icon(Icons.copy, size: 16, color: AppTheme.primaryColor),
+                    icon: const Icon(
+                      Icons.copy,
+                      size: 16,
+                      color: AppTheme.primaryColor,
+                    ),
                     label: const Text(
                       'Sao chép MAC',
-                      style: TextStyle(color: AppTheme.primaryColor, fontSize: 13),
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontSize: 13,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: AppTheme.primaryColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
@@ -879,15 +1059,24 @@ class _SettingsScreenState extends State<SettingsScreen>
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _testOtaAndShowCode(config),
-                    icon: const Icon(Icons.qr_code, size: 16, color: Color(0xFF070B12)),
+                    icon: const Icon(
+                      Icons.qr_code,
+                      size: 16,
+                      color: Color(0xFF070B12),
+                    ),
                     label: const Text(
                       'Lấy mã 6 số OTA',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: const Color(0xFF070B12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
@@ -963,7 +1152,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showAddXiaozhiConfigDialog() {
-    final nameController = TextEditingController(text: 'HDVbot');
+    final nameController = TextEditingController(text: 'botAi');
     final otaUrlController = TextEditingController(
       text: XiaozhiConfig.defaultOtaUrl,
     );
@@ -1019,7 +1208,11 @@ class _SettingsScreenState extends State<SettingsScreen>
                             border: Border.all(color: AppTheme.borderColor),
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.close, size: 20, color: AppTheme.secondaryTextColor),
+                            icon: const Icon(
+                              Icons.close,
+                              size: 20,
+                              color: AppTheme.secondaryTextColor,
+                            ),
                             onPressed: () => Navigator.pop(context),
                             padding: const EdgeInsets.all(4),
                             constraints: const BoxConstraints(),
@@ -1030,7 +1223,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 8),
                     const Text(
                       'Cấu hình kết nối dịch vụ giọng nói Xiaozhi',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 13),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const Text(
@@ -1052,8 +1248,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                         controller: nameController,
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
-                          hintText: 'Ví dụ: HDVbot',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintText: 'Ví dụ: botAi',
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1083,7 +1281,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: XiaozhiConfig.defaultOtaUrl,
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1113,7 +1313,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: 'Tự điền sau khi kích hoạt',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1125,7 +1327,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 4),
                     const Text(
                       'Tự điền sau khi kích hoạt OTA, không bắt buộc nhập',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 12),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -1148,7 +1353,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: 'Để trống sẽ tự động tạo từ thiết bị',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1160,7 +1367,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 4),
                     const Text(
                       'Để trống sẽ tự tạo địa chỉ MAC cố định theo máy',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 12),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -1183,7 +1393,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: 'Mặc định: test-token',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1225,7 +1437,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ).addXiaozhiConfig(
                           name,
                           websocketUrl,
-                          otaUrl: otaUrl.isNotEmpty ? otaUrl : XiaozhiConfig.defaultOtaUrl,
+                          otaUrl:
+                              otaUrl.isNotEmpty
+                                  ? otaUrl
+                                  : XiaozhiConfig.defaultOtaUrl,
                           customMacAddress:
                               macAddress.isNotEmpty ? macAddress : null,
                           token: token.isNotEmpty ? token : null,
@@ -1242,7 +1457,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(color: AppTheme.primaryColor),
+                              side: const BorderSide(
+                                color: AppTheme.primaryColor,
+                              ),
                             ),
                             margin: const EdgeInsets.all(10),
                           ),
@@ -1295,7 +1512,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   void _showEditXiaozhiConfigDialog(XiaozhiConfig config) {
     final nameController = TextEditingController(text: config.name);
     final otaUrlController = TextEditingController(
-      text: config.otaUrl.isNotEmpty ? config.otaUrl : XiaozhiConfig.defaultOtaUrl,
+      text:
+          config.otaUrl.isNotEmpty
+              ? config.otaUrl
+              : XiaozhiConfig.defaultOtaUrl,
     );
     final websocketUrlController = TextEditingController(
       text: config.websocketUrl,
@@ -1345,7 +1565,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: AppTheme.secondaryTextColor),
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           onPressed: () => Navigator.pop(context),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -1355,7 +1578,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 8),
                     const Text(
                       'Chỉnh sửa cấu hình kết nối Xiaozhi',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 13),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     const Text(
@@ -1377,8 +1603,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                         controller: nameController,
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
-                          hintText: 'Ví dụ: HDVbot',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintText: 'Ví dụ: botAi',
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1408,7 +1636,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: XiaozhiConfig.defaultOtaUrl,
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1438,7 +1668,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: 'Tự điền sau khi kích hoạt',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1450,7 +1682,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 4),
                     const Text(
                       'Tự điền sau khi kích hoạt OTA, không bắt buộc nhập',
-                      style: TextStyle(color: AppTheme.secondaryTextColor, fontSize: 12),
+                      style: TextStyle(
+                        color: AppTheme.secondaryTextColor,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
@@ -1474,7 +1709,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                         style: const TextStyle(color: AppTheme.textColor),
                         decoration: const InputDecoration(
                           hintText: 'Để trống sẽ tự tạo',
-                          hintStyle: TextStyle(color: AppTheme.secondaryTextColor),
+                          hintStyle: TextStyle(
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -1540,7 +1777,10 @@ class _SettingsScreenState extends State<SettingsScreen>
 
                         final updatedConfig = config.copyWith(
                           name: name,
-                          otaUrl: otaUrl.isNotEmpty ? otaUrl : XiaozhiConfig.defaultOtaUrl,
+                          otaUrl:
+                              otaUrl.isNotEmpty
+                                  ? otaUrl
+                                  : XiaozhiConfig.defaultOtaUrl,
                           websocketUrl: websocketUrl,
                           macAddress:
                               macAddress.isNotEmpty
@@ -1565,7 +1805,9 @@ class _SettingsScreenState extends State<SettingsScreen>
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
-                              side: const BorderSide(color: AppTheme.primaryColor),
+                              side: const BorderSide(
+                                color: AppTheme.primaryColor,
+                              ),
                             ),
                             margin: const EdgeInsets.all(10),
                           ),
@@ -1657,7 +1899,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: AppTheme.secondaryTextColor),
+                          icon: const Icon(
+                            Icons.close,
+                            color: AppTheme.secondaryTextColor,
+                          ),
                           onPressed: () => Navigator.pop(context),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -1667,7 +1912,10 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 16),
                     Text(
                       'Bạn có chắc chắn muốn xóa "${config.name}"?',
-                      style: const TextStyle(fontSize: 16, color: AppTheme.textColor),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.textColor,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
